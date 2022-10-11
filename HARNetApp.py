@@ -14,6 +14,7 @@ import os
 import shutil
 from pathlib import Path
 from plotly import graph_objects as go
+from datetime import date, datetime
 
 import pandas as pd
 
@@ -46,7 +47,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
     ['Data', 'Model Parameters Summary', 'Metrics', 'Metrics Plot', 'Metrics History', 'Forecast'])
 
 #################################
-dataSetExpander = st.sidebar.expander("Dataset")
+dataSetExpander = st.sidebar.expander("Dataset", expanded=True)
 
 dataSetOptions = dataSetExpander.selectbox(
     "Select Dataset", ['MAN', 'USEUINDXD', 'VIXCLS'])
@@ -61,16 +62,27 @@ stockOptions = dataSetExpander.selectbox(
                      '.SPX', '.SSEC', '.SSMI', '.STI', '.STOXX50E', '.KSE', '.N225', '.OSEAX',
                      '.GSPTSE', '.SMSI', '.OMXC20', '.OMXHPI', '.OMXSPI', '.FTMIB', '.BVLG'], 5)
 
-start_year_train = dataSetExpander.slider(
+if st.sidebar.button("Preload Dataset"):
+    df = pd.read_csv(filePath, sep=',')
+    df_symbol = df.groupby(['Symbol'])
+    df = df_symbol.get_group(stockOptions)
+    df = df.drop('Symbol', axis=1)
+    # df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d')
+    # df.index = df['Date']
+    # df.drop('Date', axis=1, inplace=True)
+    # Remove '.' values for NA
+    st.dataframe(df)
+
+timeExpander = st.sidebar.expander("Date Selection")
+
+start_year_train = timeExpander.slider(
     'Select Start Year for Training:', min_value=2000, max_value=2022, value=2012, step=1)
-n_years_train = dataSetExpander.slider(
-    'Number of Years for Training:', min_value=1, max_value=20, value=4, step=1)
-start_year_test = dataSetExpander.slider(
+start_year_test = timeExpander.slider(
     'Select Start Year for Test:', min_value=2016, max_value=2022, value=2016, step=1)
-n_years_test = dataSetExpander.slider(
+n_years_train = start_year_test - start_year_train
+n_years_test = timeExpander.slider(
     'Number of Years for Test:', min_value=1, max_value=20, value=1, step=1)
 
-include_sv = dataSetExpander.radio('Include SV', [True, False], True)
 # dataSetExpanderdataSetExpander
 modelParametersExpander = st.sidebar.expander("Model Parameters")
 
@@ -111,6 +123,7 @@ scalerMax = scalerParametersExpander.slider('Scaler Maximum',
                                             min_value=0.0, max_value=1.0, value=0.001, step=0.1, format='%.3f')
 
 otherParametersExpander = st.sidebar.expander("Other Parameters")
+include_sv = otherParametersExpander.radio('Include SV', [True, False], True)
 save_best_weights = otherParametersExpander.selectbox(
     'Save Best Weights', [True, False], 1)
 runEagerly = otherParametersExpander.radio(
@@ -471,7 +484,7 @@ if st.sidebar.button('Execute Model'):
 
     with tab5:
         col1, col2 = st.columns([1, 5])
-        ts_no.index = pd.to_datetime(ts_norm.index).date
+        ts_norm.index = pd.to_datetime(ts_norm.index).date
         col1.write(ts_norm)
 
         ########################
