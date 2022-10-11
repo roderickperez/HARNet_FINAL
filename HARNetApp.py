@@ -43,8 +43,8 @@ with st.container():
 st.sidebar.image("images/uniWienLogo.png", use_column_width=True)
 
 # Create Config File
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
-    ['Preloaded Dataset', 'Model Parameters Summary', 'Metrics', 'Metrics Plot', 'Metrics History', 'Forecast'])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
+    ['Preloaded Dataset', 'Data to Model', 'Model Parameters Summary', 'Metrics', 'Metrics Plot', 'Metrics History', 'Forecast Plot', 'Forecast Data'])
 
 #################################
 dataSetExpander = st.sidebar.expander("Dataset", expanded=True)
@@ -77,7 +77,10 @@ df['Date'] = df['Date'].astype(str)
 df[['Date', 'Time']] = df['Date'].str.split(" ", 1, expand=True)
 df.index = df['Date']
 df = df.drop(['Date', 'Time'], axis=1)
-st.dataframe(df)
+
+with tab1:
+    st.subheader(f'Dataset: {dataSetOptions}')
+    st.dataframe(df)
 
 # minYear = pd.to_datetime(df.index[0]).year
 # maxYear = pd.to_datetime(df.index[-1]).year
@@ -259,32 +262,44 @@ if st.sidebar.button('Execute Model'):
 
     ###################################
 
-    with tab1:
-        col1, col2 = st.columns([1, 3])
-        col1.write('Total Number of Samples: ' + str(len(ts_)))
-        col1.dataframe(ts_)
-
-        ########################
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(x=ts_norm.index, y=ts_norm[0], name='Data'))
-        fig.layout.update(
-            xaxis_rangeslider_visible=True)
-        fig.update_layout(
-            autosize=False,
-            width=1000,
-            height=400,
-            plot_bgcolor="black",
-            margin=dict(
-                l=50,
-                r=50,
-                b=0,
-                t=0,
-                pad=2
-            ))
-        col2.plotly_chart(fig)
-
     with tab2:
+        st.subheader(f'Stock {stockOptions}')
+        with st.container():
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                tab21, tab22 = st.tabs(['Train', 'Test'])
+                with tab21:
+                    st.write(
+                        'Total Number of Train Samples: ' + str(len(ts_)))
+                    st.dataframe(ts_)
+
+                with tab22:
+                    st.write(
+                        'Total Number of Test Samples: ' + str(len(ts_)))
+                    st.dataframe(ts_)
+
+            with col2:
+                ########################
+                fig = go.Figure()
+                fig.add_trace(
+                    go.Scatter(x=ts_norm.index, y=ts_norm[0], name='Data'))
+                fig.layout.update(
+                    xaxis_rangeslider_visible=True)
+                fig.update_layout(
+                    autosize=False,
+                    width=1000,
+                    height=400,
+                    plot_bgcolor="black",
+                    margin=dict(
+                        l=50,
+                        r=50,
+                        b=0,
+                        t=0,
+                        pad=2
+                    ))
+                col2.plotly_chart(fig)
+
+    with tab3:
         st.json(data)
 
         # Closing file
@@ -390,20 +405,20 @@ if st.sidebar.button('Execute Model'):
     ##############################
     metricsHistory = pd.read_csv('./results/config/metrics_history.csv')
 
-    with tab2:
-        tab21, tab22, tab23 = st.tabs(['Train', 'Test', 'Loss'])
+    with tab4:
+        tab41, tab42, tab43 = st.tabs(['Train', 'Test', 'Loss'])
 
-        with tab21:
+        with tab41:
             st.dataframe(metricsHistory.iloc[:, :6])
-        with tab22:
+        with tab42:
             st.dataframe(metricsHistory.iloc[:, 7:14])
-        with tab23:
+        with tab43:
             st.dataframe(metricsHistory.iloc[:, 14])
-    with tab3:
+    with tab5:
 
-        tab31, tab32, tab33 = st.tabs(['Train', 'Test', 'Loss'])
+        tab51, tab52, tab53 = st.tabs(['Train', 'Test', 'Loss'])
 
-        with tab31:
+        with tab51:
             fig = go.Figure()
             fig.add_trace(
                 go.Scatter(x=metricsHistory.index, y=metricsHistory['train__MAE'], name='Train MAE'))
@@ -435,7 +450,7 @@ if st.sidebar.button('Execute Model'):
                 ))
             st.plotly_chart(fig)
 
-        with tab32:
+        with tab52:
             fig = go.Figure()
             fig.add_trace(
                 go.Scatter(x=metricsHistory.index, y=metricsHistory['test__MAE'], name='Test MAE'))
@@ -467,7 +482,7 @@ if st.sidebar.button('Execute Model'):
                 ))
             st.plotly_chart(fig)
 
-        with tab33:
+        with tab53:
             fig = go.Figure()
             fig.add_trace(
                 go.Scatter(x=metricsHistory.index, y=metricsHistory['loss'], name='Test Loss'))
@@ -491,10 +506,10 @@ if st.sidebar.button('Execute Model'):
     #################################
     metrics = pd.read_csv('./results/config/metrics.csv')
 
-    with tab4:
+    with tab6:
         st.dataframe(metrics)
 
-    with tab5:
+    with tab7:
         col1, col2 = st.columns([1, 5])
         ts_norm.index = pd.to_datetime(ts_norm.index).date
         col1.write(ts_norm)
@@ -519,10 +534,10 @@ if st.sidebar.button('Execute Model'):
             ))
         col2.plotly_chart(fig)
 
-    with tab6:
-        tab61, tab62 = st.tabs(['Train', 'Test'])
+    with tab8:
+        tab81, tab82 = st.tabs(['Train', 'Test'])
 
-        with tab61:
+        with tab81:
             col1, col2 = st.columns([1, 3])
             col1.write('Total Number of Train Samples: ' +
                        str(len(ts_train_pred)))
@@ -549,7 +564,7 @@ if st.sidebar.button('Execute Model'):
             #     ))
             # col2.plotly_chart(fig)
 
-        with tab62:
+        with tab82:
             col1, col2 = st.columns([1, 3])
             col1.write('Total Number of Test Samples: ' +
                        str(len(ts_test)))
