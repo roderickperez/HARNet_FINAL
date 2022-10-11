@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "XandroFiles",
+			"path": "."
+		},
+		{
+			"name": "data",
+			"path": "../ResearchProject/data"
+		}
+	],
+	"settings": {}
+}
