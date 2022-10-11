@@ -55,14 +55,17 @@ filePath = "./data/MAN_data.csv"
 # filePath = "./data/VIXCLS.csv"
 
 stockOptions = dataSetExpander.selectbox(
-    "Select Stock", ['.DJI', '.SPX'])
+    "Select Stock", ['.AEX', '.AORD', '.BFX', '.BSESN', '.BVSP', '.DJI', '.FCHI', '.FTSE',
+                     '.GDAXI', '.HSI', '.IBEX', '.IXIC', '.KS11', '.MXX', '.NSEI', '.RUT',
+                     '.SPX', '.SSEC', '.SSMI', '.STI', '.STOXX50E', '.KSE', '.N225', '.OSEAX',
+                     '.GSPTSE', '.SMSI', '.OMXC20', '.OMXHPI', '.OMXSPI', '.FTMIB', '.BVLG'], 5)
 
 start_year_train = dataSetExpander.slider(
-    'Select Start Year for Training:', min_value=2000, max_value=2020, value=2012, step=1)
+    'Select Start Year for Training:', min_value=2000, max_value=2022, value=2012, step=1)
 n_years_train = dataSetExpander.slider(
     'Number of Years for Training:', min_value=1, max_value=20, value=4, step=1)
 start_year_test = dataSetExpander.slider(
-    'Select Start Year for Training:', min_value=2016, max_value=2020, value=2016, step=1)
+    'Select Start Year for Training:', min_value=2016, max_value=2022, value=2016, step=1)
 n_years_test = dataSetExpander.slider(
     'Number of Years for Test:', min_value=1, max_value=20, value=1, step=1)
 

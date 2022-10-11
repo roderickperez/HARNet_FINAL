@@ -18,7 +18,7 @@
     "verbose": 0,
     "baseline_fit": "OLS",
     "path_MAN": "MAN_data.csv",
-    "asset": ".DJI",
+    "asset": ".BSESN",
     "include_sv": false,
     "start_year_train": 2012,
     "n_years_train": 4,
