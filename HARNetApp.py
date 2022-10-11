@@ -574,3 +574,11 @@ if st.sidebar.button('Execute Model'):
                        str(len(ts_test_pred)))
             col1.dataframe(ts_test_pred)
             #ts_test_pred, ts_test_norm_pred, ts_test_norm_pred_raw, target_test, target_test_norm, target_test_norm_raw, pred_test_range
+
+######################################
+with st.sidebar.container():
+    st.sidebar.subheader("University of Vienna | Research Project")
+    st.sidebar.write(
+        "###### App Authors: Roderick Perez & Le Thi (Janie) Thuy Trang")
+    st.sidebar.write("###### Faculty Advisor: Xandro Bayer")
+    st.sidebar.write("###### Updated: 11/10/2022")
