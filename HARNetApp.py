@@ -44,7 +44,7 @@ st.sidebar.image("images/uniWienLogo.png", use_column_width=True)
 
 # Create Config File
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
-    ['Data', 'Model Parameters Summary', 'Metrics', 'Metrics Plot', 'Metrics History', 'Forecast'])
+    ['Preloaded Dataset', 'Model Parameters Summary', 'Metrics', 'Metrics Plot', 'Metrics History', 'Forecast'])
 
 #################################
 dataSetExpander = st.sidebar.expander("Dataset", expanded=True)
@@ -62,26 +62,36 @@ stockOptions = dataSetExpander.selectbox(
                      '.SPX', '.SSEC', '.SSMI', '.STI', '.STOXX50E', '.KSE', '.N225', '.OSEAX',
                      '.GSPTSE', '.SMSI', '.OMXC20', '.OMXHPI', '.OMXSPI', '.FTMIB', '.BVLG'], 5)
 
-if st.sidebar.button("Preload Dataset"):
-    df = pd.read_csv(filePath, sep=',')
-    df_symbol = df.groupby(['Symbol'])
-    df = df_symbol.get_group(stockOptions)
-    df = df.drop('Symbol', axis=1)
-    # df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d')
-    df.index = df['Date']
-    df.drop('Date', axis=1, inplace=True)
-    # Remove '.' values for NA
-    st.dataframe(df)
+variableSelection = dataSetExpander.selectbox("Select Variable", ['rsv', 'close_price', 'close_time',
+                                                                  'rk_twoscale', 'bv_ss', 'medrv',
+                                                                  'rsv_ss', 'rv10_ss', 'rv5_ss',
+                                                                  'rk_th2', 'rk_parzen', 'bv',
+                                                                  'rv10', 'open_price', 'open_time',
+                                                                  'open_to_close', 'rv5', 'nobs'], 8)
+# if st.sidebar.button("Preload Dataset"):
+# def custom_date_parser(x): return datetime.strptime(x, "%Y-%m-%d %H:%M:%S%z%z")
+
+
+df = pd.read_csv(filePath, sep=',')
+df['Date'] = df['Date'].astype(str)
+df[['Date', 'Time']] = df['Date'].str.split(" ", 1, expand=True)
+df.index = df['Date']
+df = df.drop(['Date', 'Time'], axis=1)
+st.dataframe(df)
+
+# minYear = pd.to_datetime(df.index[0]).year
+# maxYear = pd.to_datetime(df.index[-1]).year
 
 timeExpander = st.sidebar.expander("Date Selection")
 
 start_year_train = timeExpander.slider(
     'Select Start Year for Training:', min_value=2000, max_value=2022, value=2012, step=1)
+n_years_train = timeExpander.slider(
+    'Number of Year for Training:', min_value=1, max_value=21, value=4, step=1)
 start_year_test = timeExpander.slider(
-    'Select Start Year for Test:', min_value=2016, max_value=2022, value=2016, step=1)
-n_years_train = start_year_test - start_year_train
+    'Select Start Year for Test:', min_value=2016, max_value=2022, value=2016, step=1, disabled=False)
 n_years_test = timeExpander.slider(
-    'Number of Years for Test:', min_value=1, max_value=20, value=1, step=1)
+    'Number of Years for Test:', min_value=1, max_value=6, value=1, step=1)
 
 # dataSetExpanderdataSetExpander
 modelParametersExpander = st.sidebar.expander("Model Parameters")
@@ -110,8 +120,8 @@ optimizer = modelParametersExpander.selectbox(
     'Optimizer', ['Adam', 'RMSProp', 'SGD', 'Adadelta', 'Adagrad', 'Adamax', 'Nadam'], 0)
 loss = modelParametersExpander.selectbox('Loss', ['QLIKE'])
 verbose = modelParametersExpander.selectbox('Verbose', [0, 1], 0)
-baselineFit = modelParametersExpander.selectbox('Baseline Fit', ['OLS', 'WLS'])
-
+baselineFit = modelParametersExpander.selectbox(
+    'Baseline Fit', ['OLS', 'WLS'])
 
 scalerParametersExpander = st.sidebar.expander("Scaler Parameters")
 
@@ -123,7 +133,8 @@ scalerMax = scalerParametersExpander.slider('Scaler Maximum',
                                             min_value=0.0, max_value=1.0, value=0.001, step=0.1, format='%.3f')
 
 otherParametersExpander = st.sidebar.expander("Other Parameters")
-include_sv = otherParametersExpander.radio('Include SV', [True, False], True)
+include_sv = otherParametersExpander.radio(
+    'Include SV', [True, False], True)
 save_best_weights = otherParametersExpander.selectbox(
     'Save Best Weights', [True, False], 1)
 runEagerly = otherParametersExpander.radio(
@@ -286,7 +297,7 @@ if st.sidebar.button('Execute Model'):
     if not model.is_tf_model:
         print(f"\n-- Fitting {exp_name}... --")
         model.fit(ts_norm.values[idx_range_train[0] -
-                  model.max_lag:idx_range_train[1], :])
+                                 model.max_lag:idx_range_train[1], :])
         model.save(save_path_curr)
     else:
         print(f"\n-- Fitting {exp_name} with {cfg.epochs} epochs... --")
@@ -301,7 +312,8 @@ if st.sidebar.button('Execute Model'):
             cfg.loss), sample_weight_mode="temporal")
 
         callbacks = []
-        callbacks.append(LRTensorBoard(log_dir=tb_path_curr, profile_batch=0))
+        callbacks.append(LRTensorBoard(
+            log_dir=tb_path_curr, profile_batch=0))
         callbacks.append(MetricCallback(ts.to_numpy(), idx_range_train, idx_range_test, scaler, tb_path_curr,
                                         save_best_weights=cfg.save_best_weights))
         model.run_eagerly = cfg.run_eagerly
@@ -309,7 +321,7 @@ if st.sidebar.button('Execute Model'):
         if cfg.baseline_fit == 'WLS':  # Weighted Least Squared
             weights = 1 / \
                 model(ts_norm_in[:, idx_range_train[0] -
-                      model.max_lag:idx_range_train[1] - 1, :])
+                                 model.max_lag:idx_range_train[1] - 1, :])
         else:  # OLS case (Ordinary Least Squared)
             weights = tf.ones_like(
                 ts_norm_in[:, idx_range_train[0]:idx_range_train[1], :])
@@ -328,7 +340,7 @@ if st.sidebar.button('Execute Model'):
             (tf.float32, tf.float32, tf.float32), output_shapes=(
                 tf.TensorShape(
                     [cfg.batch_size, model.max_lag + cfg.label_length - 1,
-                     model.channels_in]),
+                        model.channels_in]),
                 tf.TensorShape(
                     [cfg.batch_size, cfg.label_length, model.channels_out]),
                 tf.TensorShape(
