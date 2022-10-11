@@ -68,8 +68,8 @@ if st.sidebar.button("Preload Dataset"):
     df = df_symbol.get_group(stockOptions)
     df = df.drop('Symbol', axis=1)
     # df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d')
-    # df.index = df['Date']
-    # df.drop('Date', axis=1, inplace=True)
+    df.index = df['Date']
+    df.drop('Date', axis=1, inplace=True)
     # Remove '.' values for NA
     st.dataframe(df)
 
