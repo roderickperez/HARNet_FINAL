@@ -66,7 +66,7 @@ start_year_train = dataSetExpander.slider(
 n_years_train = dataSetExpander.slider(
     'Number of Years for Training:', min_value=1, max_value=20, value=4, step=1)
 start_year_test = dataSetExpander.slider(
-    'Select Start Year for Training:', min_value=2016, max_value=2022, value=2016, step=1)
+    'Select Start Year for Test:', min_value=2016, max_value=2022, value=2016, step=1)
 n_years_test = dataSetExpander.slider(
     'Number of Years for Test:', min_value=1, max_value=20, value=1, step=1)
 
@@ -471,7 +471,7 @@ if st.sidebar.button('Execute Model'):
 
     with tab5:
         col1, col2 = st.columns([1, 5])
-        ts_norm.index = pd.to_datetime(ts_norm.index).date
+        ts_no.index = pd.to_datetime(ts_norm.index).date
         col1.write(ts_norm)
 
         ########################
