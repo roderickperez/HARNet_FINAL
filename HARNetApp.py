@@ -1,3 +1,4 @@
+from copy import copy
 from util import HARNetCfg, get_MAN_data, year_range_to_idx_range
 from model import scaler_from_cfg, model_from_cfg, get_loss, LRTensorBoard, MetricCallback, get_model_metrics, get_pred
 from tensorflow.python.keras import backend as K
@@ -211,6 +212,7 @@ if st.sidebar.button('Execute Model'):
     # load data
     ts = get_MAN_data(cfg.path, cfg.asset, cfg.include_sv)
 
+    ts_ = copy(ts)
     ###################################
     if cfg.include_sv and "log" in cfg.scaler.lower():
         ts.iloc[:, -1] = (1 + ts.values[:, -1] / ts.values[:, 0])
@@ -220,6 +222,8 @@ if st.sidebar.button('Execute Model'):
     ts_norm = pd.DataFrame(data=scaler.fit_transform(
         ts.to_numpy()), index=ts.index)
 
+    ts_['norm'] = ts_norm.iloc[:, 0]
+    ts_.index = pd.to_datetime(ts_.index).date
     # create train datasets
     year_range_train = [cfg.start_year_train,
                         cfg.start_year_train + cfg.n_years_train]
@@ -233,8 +237,8 @@ if st.sidebar.button('Execute Model'):
 
     with tab1:
         col1, col2 = st.columns([1, 3])
-        col1.write(len(ts_norm))
-        col1.dataframe(ts_norm)
+        col1.write('Total Number of Samples: ' + str(len(ts_)))
+        col1.dataframe(ts_)
 
         ########################
         fig = go.Figure()
