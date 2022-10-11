@@ -281,7 +281,8 @@ if st.sidebar.button('Execute Model'):
         K.set_value(optimizer.lr, cfg.learning_rate)
 
         # pass correct inp ts and prediction here
-        ts_norm_in = model.get_inp_ts(ts_norm.values)
+        ts_norm_in = model.get_inp_ts(
+            ts_norm.values)  # Reshape to tensor format
 
         model.compile(optimizer=optimizer, loss=get_loss(
             cfg.loss), sample_weight_mode="temporal")
@@ -292,13 +293,17 @@ if st.sidebar.button('Execute Model'):
                                         save_best_weights=cfg.save_best_weights))
         model.run_eagerly = cfg.run_eagerly
 
-        if cfg.baseline_fit == 'WLS':
+        if cfg.baseline_fit == 'WLS':  # Weighted Least Squared
             weights = 1 / \
                 model(ts_norm_in[:, idx_range_train[0] -
                       model.max_lag:idx_range_train[1] - 1, :])
-        else:
+        else:  # OLS case (Ordinary Least Squared)
             weights = tf.ones_like(
                 ts_norm_in[:, idx_range_train[0]:idx_range_train[1], :])
+
+        # st.write(weights)
+        # st.write('Shape of Weight Tensor: ', tf.size(weights))
+        # st.write(type(weights))
 
         valid_batch_gen_idxs = list(
             range(idx_range_train[0] + model.max_lag, idx_range_train[1] - cfg.label_length + 1))
@@ -351,8 +356,8 @@ if st.sidebar.button('Execute Model'):
         model, scaler, ts.to_numpy(), idx_range_test, prefix='test')  #
     df_metrics_test = pd.DataFrame(metrics_test, index=[cfg.model])
     df_metrics = pd.concat([df_metrics_train, df_metrics_test], axis=1)
-    print("")
-    print(df_metrics)
+    # print("")
+    # print(df_metrics)
     df_metrics.to_csv(save_path_curr + "/metrics.csv")
     st.sidebar.success(
         f"Model Successfully Trained")
@@ -466,6 +471,7 @@ if st.sidebar.button('Execute Model'):
 
     with tab5:
         col1, col2 = st.columns([1, 5])
+        ts_norm.index = pd.to_datetime(ts_norm.index).date
         col1.write(ts_norm)
 
         ########################
@@ -493,7 +499,8 @@ if st.sidebar.button('Execute Model'):
 
         with tab61:
             col1, col2 = st.columns([1, 3])
-            col1.write(len(ts_train_pred))
+            col1.write('Total Number of Train Samples: ' +
+                       str(len(ts_train_pred)))
             col1.dataframe(ts_train_pred)
             # ts_train_pred, ts_train_norm_pred, ts_train_norm_pred_raw, target_train, target_train_norm, target_train_norm_raw, pred_train_range
 
@@ -519,5 +526,11 @@ if st.sidebar.button('Execute Model'):
 
         with tab62:
             col1, col2 = st.columns([1, 3])
-            col1.write(len(ts_test_pred))
+            col1.write('Total Number of Test Samples: ' +
+                       str(len(ts_test)))
+            col1.dataframe(ts_test)
+
+            col1.write('Total Number of Test Samples: ' +
+                       str(len(ts_test_pred)))
             col1.dataframe(ts_test_pred)
+            #ts_test_pred, ts_test_norm_pred, ts_test_norm_pred_raw, target_test, target_test_norm, target_test_norm_raw, pred_test_range
