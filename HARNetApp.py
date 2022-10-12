@@ -15,6 +15,7 @@ import shutil
 from pathlib import Path
 from plotly import graph_objects as go
 from datetime import date, datetime
+import plotly.graph_objects as go
 
 import pandas as pd
 
@@ -78,14 +79,50 @@ df[['Date', 'Time']] = df['Date'].str.split(" ", 1, expand=True)
 df.index = df['Date']
 df = df.drop(['Date', 'Time'], axis=1)
 
-with tab1:
-    st.subheader(f'Dataset: {dataSetOptions}')
-    st.dataframe(df)
+df_symbol = df.groupby(['Symbol'])
+df = df_symbol.get_group(stockOptions)
+df = df.drop('Symbol', axis=1)
 
-# minYear = pd.to_datetime(df.index[0]).year
-# maxYear = pd.to_datetime(df.index[-1]).year
+with tab1:
+    st.subheader(f'Dataset: {dataSetOptions} | {stockOptions}')
+    tab11, tab12 = st.tabs(['Data', 'Plot'])
+
+    with tab11:
+        st.dataframe(df)
+    with tab12:
+        #######################
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(x=df.index, y=df[variableSelection], name='Data'))
+        fig.layout.update(
+            xaxis_rangeslider_visible=True)
+        fig.update_layout(
+            autosize=False,
+            width=1400,
+            height=400,
+            plot_bgcolor="black",
+            margin=dict(
+                l=50,
+                r=50,
+                b=0,
+                t=0,
+                pad=2
+            ))
+        st.plotly_chart(fig)
+
+minYear = pd.to_datetime(df.index[0]).date()
+maxYear = pd.to_datetime(df.index[-1]).date()
 
 timeExpander = st.sidebar.expander("Date Selection")
+
+startPeriod = timeExpander.date_input("Start Date", minYear)
+endPeriod = timeExpander.date_input("End Date", maxYear)
+
+trainingPercentage = timeExpander.slider('Training Percentage',
+                                         min_value=0, max_value=100, value=80, step=5)
+testPercentage = timeExpander.slider('Test Percentage',
+                                     min_value=0, max_value=100, value=(100-trainingPercentage), step=5, disabled=True)
+
 
 start_year_train = timeExpander.slider(
     'Select Start Year for Training:', min_value=2000, max_value=2022, value=2012, step=1)
@@ -95,6 +132,7 @@ start_year_test = timeExpander.slider(
     'Select Start Year for Test:', min_value=2016, max_value=2022, value=2016, step=1, disabled=False)
 n_years_test = timeExpander.slider(
     'Number of Years for Test:', min_value=1, max_value=6, value=1, step=1)
+
 
 # dataSetExpanderdataSetExpander
 modelParametersExpander = st.sidebar.expander("Model Parameters")
@@ -581,4 +619,4 @@ with st.sidebar.container():
     st.sidebar.write(
         "###### App Authors: Roderick Perez & Le Thi (Janie) Thuy Trang")
     st.sidebar.write("###### Faculty Advisor: Xandro Bayer")
-    st.sidebar.write("###### Updated: 11/10/2022")
+    st.sidebar.write("###### Updated: 12/10/2022")
