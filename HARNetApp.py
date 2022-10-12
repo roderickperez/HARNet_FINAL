@@ -92,29 +92,70 @@ timeExpander = st.sidebar.expander("Date Selection")
 startPeriod = timeExpander.date_input("Start Date", minYear)
 endPeriod = timeExpander.date_input("End Date", maxYear)
 
+dateMask = (df['Date'] >= str(startPeriod)) & (df['Date'] <= str(endPeriod))
+df_ = df.loc[dateMask]
+
 trainingPercentage = timeExpander.slider('Training Percentage',
                                          min_value=0, max_value=100, value=80, step=5)
 testPercentage = timeExpander.slider('Test Percentage',
                                      min_value=0, max_value=100, value=(100-trainingPercentage), step=5, disabled=True)
 
+dateMask = (df['Date'] >= str(startPeriod)) & (df['Date'] <= str(endPeriod))
+
+# df_ is a intermediate dataFrame created to then split it into train and test
+df_ = df.loc[dateMask]
+df_ = df_.reset_index(drop=True)
+
+minIndex = df_.index.min()
+maxIndex = df_.index.max()
+
+totalIndex = maxIndex-minIndex
+trainingPercentageIndex = round(totalIndex*(trainingPercentage/100))
+testingPercentageIndex = totalIndex-trainingPercentageIndex
+
+df_train = df_[:-testingPercentageIndex]
+df_test = df_[-testingPercentageIndex:]
+
+trainStartPeriod = df_train['Date'].values[0]
+trainEndPeriod = df_train['Date'].values[-1]
+
+testStartPeriod = df_test['Date'].values[0]
+testEndPeriod = df_test['Date'].values[-1]
+
 with tab1:
     st.subheader(f'Dataset: {dataSetOptions} | {stockOptions}')
-    tab11, tab12 = st.tabs(['Data', 'Plot'])
+    tab11, tab12, tab13 = st.tabs(['Data', 'Statistics', 'Plot'])
 
     with tab11:
         st.dataframe(df)
+
     with tab12:
+        st.write('Initial Index: ' + str(minIndex))
+        st.write('Last Index: ' + str(maxIndex))
+
+        st.write('Total Samples: ', str(totalIndex))
+        st.write('Training Samples: ', str(trainingPercentageIndex))
+        st.write('Testing Samples: ', str(testingPercentageIndex))
+
+    with tab13:
         #######################
         fig = go.Figure()
         fig.add_trace(
-            go.Scatter(x=[startPeriod, startPeriod, endPeriod, endPeriod, startPeriod],
+            go.Scatter(x=[trainStartPeriod, trainStartPeriod, trainEndPeriod, trainEndPeriod, trainStartPeriod],
                        y=[df[variableSelection].min(), df[variableSelection].max(),
                           df[variableSelection].max(
                        ), df[variableSelection].min(),
-                df[variableSelection].min()], fill="toself", opacity=0.5,
+                df[variableSelection].min()], fill="toself", opacity=0.3,
                 mode="none", name=f"Train", fillcolor='green'))
         fig.add_trace(
-            go.Scatter(x=df['Date'], y=df[variableSelection], name='Data'))
+            go.Scatter(x=[testStartPeriod, testStartPeriod, testEndPeriod, testEndPeriod, testStartPeriod],
+                       y=[df[variableSelection].min(), df[variableSelection].max(),
+                          df[variableSelection].max(
+                       ), df[variableSelection].min(),
+                df[variableSelection].min()], fill="toself", opacity=0.3,
+                mode="none", name=f"Test", fillcolor='red'))
+        fig.add_trace(
+            go.Scatter(x=df['Date'], y=df[variableSelection], name='Data', mode='lines', line=dict(color='blue')))
         fig.layout.update(
             xaxis_rangeslider_visible=True)
         fig.update_layout(
