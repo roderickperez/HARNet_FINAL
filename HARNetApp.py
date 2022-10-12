@@ -859,7 +859,7 @@ if st.sidebar.button('Execute Model'):
             st.plotly_chart(fig)
     with tab9:
         st.subheader('Weigh Selection: ' + str(baselineFit))
-        st.write('Weights Matrix Size: ' + str(weightMatrixSize))
+        # st.write('Weights Matrix Size: ' + str(weightMatrixSize))
 ######################################
 with st.sidebar.container():
     st.sidebar.subheader("University of Vienna | Research Project")
