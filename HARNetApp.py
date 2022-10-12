@@ -44,8 +44,8 @@ with st.container():
 st.sidebar.image("images/uniWienLogo.png", use_column_width=True)
 
 # Create Config File
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
-    ['Preloaded Dataset', 'Data to Model', 'Model Parameters Summary', 'Metrics', 'Metrics Plot', 'Metrics History', 'Forecast Plot', 'Forecast Data'])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
+    ['Preloaded Dataset', 'Model Parameters Summary', 'Metrics', 'Metrics Plot', 'Metrics History', 'Forecast Plot', 'Forecast Data'])
 
 #################################
 dataSetExpander = st.sidebar.expander("Dataset", expanded=True)
@@ -103,6 +103,7 @@ testPercentage = timeExpander.slider('Test Percentage',
 dateMask = (df['Date'] >= str(startPeriod)) & (df['Date'] <= str(endPeriod))
 
 # df_ is a intermediate dataFrame created to then split it into train and test
+
 df_ = df.loc[dateMask]
 df_ = df_.reset_index(drop=True)
 
@@ -215,7 +216,7 @@ baselineFit = modelParametersExpander.selectbox(
 scalerParametersExpander = st.sidebar.expander("Scaler Parameters")
 
 scalerSelection = scalerParametersExpander.selectbox(
-    'Scaler', ['MinMax', 'Standard'], 0)
+    'Scaler', ['MinMax', 'LogMinMax', 'None'], 0)
 scalerMin = scalerParametersExpander.slider('Scaler Minimum',
                                             min_value=0.0, max_value=1.0, value=0.0, step=0.1, format='%.3f')
 scalerMax = scalerParametersExpander.slider('Scaler Maximum',
@@ -325,6 +326,19 @@ if st.sidebar.button('Execute Model'):
     # load data
     ts = get_MAN_data(cfg.path, cfg.asset, cfg.include_sv)
 
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write('Xandro')
+        st.write(len(ts))
+        st.write(ts)
+
+    with col2:
+        st.write('RPA')
+        df = df.set_index('Date')
+        df = df[variableSelection]
+        st.write(len(df))
+        st.write(df)
+
     ts_ = copy(ts)
     ###################################
     if cfg.include_sv and "log" in cfg.scaler.lower():
@@ -332,64 +346,51 @@ if st.sidebar.button('Execute Model'):
 
     # normalize input time series
     scaler = scaler_from_cfg(cfg)
+
     ts_norm = pd.DataFrame(data=scaler.fit_transform(
-        ts.to_numpy()), index=ts.index)
+        ts_.to_numpy()), index=ts.index)
+
+    df_norm = pd.DataFrame(data=scaler.fit_transform(
+        df.to_numpy()), index=df.index)
 
     ts_['norm'] = ts_norm.iloc[:, 0]
     ts_.index = pd.to_datetime(ts_.index).date
+
+    # df['norm'] = df_norm
+    #df.index = pd.to_datetime(df.index).date
+    df = pd.concat([df, df_norm], axis=1, ignore_index=True)
+    df = df.rename(columns={0: "trainSSet", 1: 'norm'})
+
     # create train datasets
     year_range_train = [cfg.start_year_train,
                         cfg.start_year_train + cfg.n_years_train]
     year_range_test = [cfg.start_year_train + cfg.n_years_train,
                        cfg.start_year_train + cfg.n_years_train + cfg.n_years_test]
 
-    st.write(year_range_train)
-    st.write(year_range_test)
+    # st.write(year_range_train)
+    # st.write(year_range_test)
+
     idx_range_train = year_range_to_idx_range(ts_norm, year_range_train)
     idx_range_test = year_range_to_idx_range(ts_norm, year_range_test)
 
-    st.write(idx_range_train)
-    st.write(idx_range_test)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write('Xandro')
+        st.write(len(ts_))
+        st.write(ts_)
+
+    with col2:
+        st.write('RPA')
+        st.write(len(df))
+        st.write(df)
+
+    ###########################################
+    # Till here df and ts (ts_) are equal
+    # st.write(ts_)
+    st.write(idx_range_test)  # These are the ranges (index) for the Test data
     ###################################
 
     with tab2:
-        st.subheader(f'Stock {stockOptions}')
-        with st.container():
-            col1, col2 = st.columns([1, 3])
-            with col1:
-                tab21, tab22 = st.tabs(['Train', 'Test'])
-                with tab21:
-                    st.write(
-                        'Total Number of Train Samples: ' + str(len(ts_)))
-                    st.dataframe(ts_)
-
-                with tab22:
-                    st.write(
-                        'Total Number of Test Samples: ' + str(len(ts_)))
-                    st.dataframe(ts_)
-
-            with col2:
-                ########################
-                fig = go.Figure()
-                fig.add_trace(
-                    go.Scatter(x=ts_norm.index, y=ts_norm[0], name='Data'))
-                fig.layout.update(
-                    xaxis_rangeslider_visible=True)
-                fig.update_layout(
-                    autosize=False,
-                    width=1000,
-                    height=400,
-                    plot_bgcolor="black",
-                    margin=dict(
-                        l=50,
-                        r=50,
-                        b=0,
-                        t=0,
-                        pad=2
-                    ))
-                col2.plotly_chart(fig)
-
-    with tab3:
         st.json(data)
 
         # Closing file
@@ -495,20 +496,20 @@ if st.sidebar.button('Execute Model'):
     ##############################
     metricsHistory = pd.read_csv('./results/config/metrics_history.csv')
 
+    with tab3:
+        tab31, tab32, tab33 = st.tabs(['Train', 'Test', 'Loss'])
+
+        with tab31:
+            st.dataframe(metricsHistory.iloc[:, :6])
+        with tab32:
+            st.dataframe(metricsHistory.iloc[:, 7:14])
+        with tab33:
+            st.dataframe(metricsHistory.iloc[:, 14])
     with tab4:
+
         tab41, tab42, tab43 = st.tabs(['Train', 'Test', 'Loss'])
 
         with tab41:
-            st.dataframe(metricsHistory.iloc[:, :6])
-        with tab42:
-            st.dataframe(metricsHistory.iloc[:, 7:14])
-        with tab43:
-            st.dataframe(metricsHistory.iloc[:, 14])
-    with tab5:
-
-        tab51, tab52, tab53 = st.tabs(['Train', 'Test', 'Loss'])
-
-        with tab51:
             fig = go.Figure()
             fig.add_trace(
                 go.Scatter(x=metricsHistory.index, y=metricsHistory['train__MAE'], name='Train MAE'))
@@ -540,7 +541,7 @@ if st.sidebar.button('Execute Model'):
                 ))
             st.plotly_chart(fig)
 
-        with tab52:
+        with tab42:
             fig = go.Figure()
             fig.add_trace(
                 go.Scatter(x=metricsHistory.index, y=metricsHistory['test__MAE'], name='Test MAE'))
@@ -572,7 +573,7 @@ if st.sidebar.button('Execute Model'):
                 ))
             st.plotly_chart(fig)
 
-        with tab53:
+        with tab43:
             fig = go.Figure()
             fig.add_trace(
                 go.Scatter(x=metricsHistory.index, y=metricsHistory['loss'], name='Test Loss'))
@@ -596,10 +597,10 @@ if st.sidebar.button('Execute Model'):
     #################################
     metrics = pd.read_csv('./results/config/metrics.csv')
 
-    with tab6:
+    with tab5:
         st.dataframe(metrics)
 
-    with tab7:
+    with tab6:
         col1, col2 = st.columns([1, 5])
         ts_norm.index = pd.to_datetime(ts_norm.index).date
         col1.write(ts_norm)
@@ -624,10 +625,10 @@ if st.sidebar.button('Execute Model'):
             ))
         col2.plotly_chart(fig)
 
-    with tab8:
-        tab81, tab82 = st.tabs(['Train', 'Test'])
+    with tab7:
+        tab71, tab72 = st.tabs(['Train', 'Test'])
 
-        with tab81:
+        with tab71:
             col1, col2 = st.columns([1, 3])
             col1.write('Total Number of Train Samples: ' +
                        str(len(ts_train_pred)))
@@ -654,7 +655,7 @@ if st.sidebar.button('Execute Model'):
             #     ))
             # col2.plotly_chart(fig)
 
-        with tab82:
+        with tab72:
             col1, col2 = st.columns([1, 3])
             col1.write('Total Number of Test Samples: ' +
                        str(len(ts_test)))
