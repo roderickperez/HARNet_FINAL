@@ -197,7 +197,7 @@ useBiasDeConv = modelParametersExpander.radio(
 activationFunction = modelParametersExpander.selectbox(
     'Activation Function', ['relu', 'tanh', 'sigmoid'], 0)
 learningRate = modelParametersExpander.slider('Learning Rate',
-                                              min_value=0.001, max_value=1.0, value=0.1, step=0.001, format='%.4f')
+                                              min_value=0.001, max_value=1.0, value=0.1, step=0.1, format='%.4f')
 epochs = modelParametersExpander.slider(
     'Epochs', min_value=1, max_value=1000, value=100, step=1)
 stepsPerEpoch = modelParametersExpander.slider(

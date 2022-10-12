@@ -8,9 +8,9 @@
         5,
         20
     ],
-    "learning_rate": 0.0001,
-    "epochs": 100,
-    "steps_per_epoch": 1,
+    "learning_rate": 0.9,
+    "epochs": 1000,
+    "steps_per_epoch": 10,
     "label_length": 5,
     "batch_size": 4,
     "optimizer": "Adam",
