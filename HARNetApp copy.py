@@ -44,8 +44,8 @@ with st.container():
 st.sidebar.image("images/uniWienLogo.png", use_column_width=True)
 
 # Create Config File
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(
-    ['Preloaded Dataset', 'Data to Model', 'Model Parameters Summary', 'Metrics per Epoch', 'Metrics Plot', 'Metrics History', 'Forecast Results', 'Forecast Data', 'Weights Matrix'])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
+    ['Preloaded Dataset', 'Data to Model', 'Model Parameters Summary', 'Metrics per Epoch', 'Metrics Plot', 'Metrics History', 'Forecast Results', 'Forecast Data'])
 
 #################################
 dataSetExpander = st.sidebar.expander("Dataset", expanded=True)
@@ -208,10 +208,10 @@ batchSize = modelParametersExpander.slider(
     'Batch Size', min_value=1, max_value=100, value=4, step=1)
 optimizer = modelParametersExpander.selectbox(
     'Optimizer', ['Adam', 'RMSProp', 'SGD', 'Adadelta', 'Adagrad', 'Adamax', 'Nadam'], 0)
-loss = modelParametersExpander.selectbox('Loss', ['QLIKE', 'MSE', 'MAE'])
+loss = modelParametersExpander.selectbox('Loss', ['QLIKE'])
 verbose = modelParametersExpander.selectbox('Verbose', [0, 1], 0)
 baselineFit = modelParametersExpander.selectbox(
-    'Baseline Fit', ['OLS', 'WLS', 'Zeros', 'Random'])
+    'Baseline Fit', ['OLS', 'WLS'])
 
 scalerParametersExpander = st.sidebar.expander("Scaler Parameters")
 
@@ -324,7 +324,7 @@ if st.sidebar.button('Execute Model'):
         save_path_curr, os.path.basename(args.cfg)))
 
     # load data
-    ts = get_MAN_data(cfg.path, cfg.asset, cfg.include_sv)
+    # ts = get_MAN_data(cfg.path, cfg.asset, cfg.include_sv)
 
     # col1, col2 = st.columns(2)
     # with col1:
@@ -339,22 +339,22 @@ if st.sidebar.button('Execute Model'):
     #     st.write(len(df))
     #     st.write(df)
 
-    ts_ = copy(ts)
+    # ts_ = copy(ts)
     ###################################
-    if cfg.include_sv and "log" in cfg.scaler.lower():
-        ts.iloc[:, -1] = (1 + ts.values[:, -1] / ts.values[:, 0])
+    # if cfg.include_sv and "log" in cfg.scaler.lower():
+    #     ts.iloc[:, -1] = (1 + ts.values[:, -1] / ts.values[:, 0])
 
     # normalize input time series
     scaler = scaler_from_cfg(cfg)
 
-    ts_norm = pd.DataFrame(data=scaler.fit_transform(
-        ts_.to_numpy()), index=ts.index)
+    # ts_norm = pd.DataFrame(data=scaler.fit_transform(
+    #     ts_.to_numpy()), index=ts.index)
 
     df_norm = pd.DataFrame(data=scaler.fit_transform(
         df.to_numpy()), index=df.index)
 
-    ts_['norm'] = ts_norm.iloc[:, 0]
-    ts_.index = pd.to_datetime(ts_.index).date
+    # ts_['norm'] = ts_norm.iloc[:, 0]
+    # ts_.index = pd.to_datetime(ts_.index).date
 
     # df['norm'] = df_norm
     #df.index = pd.to_datetime(df.index).date
@@ -412,11 +412,13 @@ if st.sidebar.button('Execute Model'):
     # st.write(type(trainStartIndex))
 
     idx_range_train = [int(trainStartIndex), int(trainEndIndex)]
-
     idx_range_test = [int(testStartIndex), int(testEndIndex)]
 
-    df_train = df.iloc[idx_range_train[0]:idx_range_train[1] + 1, ]
-    df_test = df.iloc[idx_range_test[0]:idx_range_test[1] + 1, ]
+    st.write(idx_range_train)
+    st.write(idx_range_test)
+
+    df_train = df.iloc[idx_range_train[0]:idx_range_train[1], ]
+    df_test = df.iloc[idx_range_test[0]:idx_range_test[1], ]
 
     with tab2:
         st.subheader(f'Stock {stockOptions}')
@@ -497,7 +499,7 @@ if st.sidebar.button('Execute Model'):
     # st.dataframe(df_norm)
     # init model
     # Here I replace ts_norm by df_norm
-    model = model_from_cfg(cfg, df_norm, scaler, idx_range_train)
+    model = model_from_cfg(cfg, ts_norm, scaler, idx_range_train)
 
     # fit model
     if not model.is_tf_model:
@@ -520,7 +522,7 @@ if st.sidebar.button('Execute Model'):
         callbacks = []
         callbacks.append(LRTensorBoard(
             log_dir=tb_path_curr, profile_batch=0))
-        callbacks.append(MetricCallback(ts.to_numpy(), idx_range_train, idx_range_test, scaler, tb_path_curr,
+        callbacks.append(MetricCallback(df.to_numpy(), idx_range_train, idx_range_test, scaler, tb_path_curr,
                                         save_best_weights=cfg.save_best_weights))
         model.run_eagerly = cfg.run_eagerly
 
@@ -572,7 +574,7 @@ if st.sidebar.button('Execute Model'):
 
     df_train_ = df.to_numpy()
     df_train_ = df_train_[idx_range_train[0] -
-                          model.max_lag:idx_range_train[1]+1, :]  # I added 1 extra value to match with the data selection
+                          model.max_lag:idx_range_train[1], :]  # I added 1 extra value to match with the data selection
     df_train_pred, df_train_norm_pred, df_train_norm_pred_raw, df_target_train, df_target_train_norm, df_target_train_norm_raw, df_pred_train_range = get_pred(model, scaler,
                                                                                                                                                                df_train_)
 
@@ -585,7 +587,7 @@ if st.sidebar.button('Execute Model'):
 
     df_test_ = df.to_numpy()
     df_test_ = df_test_[idx_range_test[0] -
-                        model.max_lag:idx_range_test[1]+1, :]
+                        model.max_lag:idx_range_test[1], :]
     df_test_pred, df_test_norm_pred, df_test_norm_pred_raw, df_target_test, df_target_test_norm, df_target_test_norm_raw, df_pred_test_range = get_pred(model, scaler,
                                                                                                                                                         df_test_)
 
@@ -596,11 +598,11 @@ if st.sidebar.button('Execute Model'):
 
     #########################################################
     metrics_train = get_model_metrics(
-        model, scaler, ts.to_numpy(), idx_range_train, prefix='train')  #
+        model, scaler, df.to_numpy(), idx_range_train, prefix='train')  #
     df_metrics_train = pd.DataFrame(metrics_train, index=[cfg.model])
 
     metrics_test = get_model_metrics(
-        model, scaler, ts.to_numpy(), idx_range_test, prefix='test')  #
+        model, scaler, df.to_numpy(), idx_range_test, prefix='test')  #
     df_metrics_test = pd.DataFrame(metrics_test, index=[cfg.model])
     df_metrics = pd.concat([df_metrics_train, df_metrics_test], axis=1)
     # print("")
@@ -803,63 +805,45 @@ if st.sidebar.button('Execute Model'):
         tab81, tab82 = st.tabs(['Train', 'Test'])
 
         with tab81:
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                x_trainVariable = st.selectbox('Choose X Train variable:', [variableSelection,
-                                                                            'norm'])
-            with col2:
-                y_trainVariable = st.selectbox('Choose Y Train variable:', ['df_train_pred',
-                                                                            'df_train_norm_pred',
-                                                                            'df_target_train',
-                                                                            'df_target_train_norm'])
-            #######################
-            fig = go.Figure()
-            fig.add_trace(
-                go.Scatter(x=df_train[x_trainVariable], y=df_train[y_trainVariable], name='Data', mode='markers', line=dict(color='blue')))
-            fig.update_layout(
-                autosize=False,
-                width=1000,
-                height=400,
-                plot_bgcolor="black",
-                margin=dict(
-                    l=50,
-                    r=50,
-                    b=0,
-                    t=0,
-                    pad=2
-                ))
-            st.plotly_chart(fig)
+            pass
+            # col1, col2 = st.columns([1, 3])
+            # col1.write('Total Number of Train Samples: ' +
+            #            str(len(ts_train_pred)))
+            # col1.dataframe(ts_train_pred)
+            # ts_train_pred, ts_train_norm_pred, ts_train_norm_pred_raw, target_train, target_train_norm, target_train_norm_raw, pred_train_range
+
+            ########################
+            # fig = go.Figure()
+            # fig.add_trace(
+            #     go.Scatter(x=ts_norm.index, y=ts_norm[0], name='Data'))
+            # fig.layout.update(
+            #     xaxis_rangeslider_visible=True)
+            # fig.update_layout(
+            #     autosize=False,
+            #     width=900,
+            #     height=400,
+            #     plot_bgcolor="black",
+            #     margin=dict(
+            #         l=50,
+            #         r=50,
+            #         b=0,
+            #         t=0,
+            #         pad=2
+            #     ))
+            # col2.plotly_chart(fig)
 
         with tab82:
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                x_testVariable = st.selectbox('Choose X Test variable:', [variableSelection,
-                                                                          'norm'])
-            with col2:
-                y_testVariable = st.selectbox('Choose Y Test variable:', ['df_test_pred',
-                                                                          'df_test_norm_pred',
-                                                                          'df_target_test',
-                                                                          'df_target_test_norm'])
-            #######################
-            fig = go.Figure()
-            fig.add_trace(
-                go.Scatter(x=df_test[x_testVariable], y=df_test[y_testVariable], name='Data', mode='markers', line=dict(color='blue')))
-            fig.update_layout(
-                autosize=False,
-                width=1000,
-                height=400,
-                plot_bgcolor="black",
-                margin=dict(
-                    l=50,
-                    r=50,
-                    b=0,
-                    t=0,
-                    pad=2
-                ))
-            st.plotly_chart(fig)
-    with tab9:
-        st.subheader('Weigh Selection: ' + str(baselineFit))
-        st.write('Weights Matrix Size: ' + str(weightMatrixSize))
+            pass
+            # col1, col2 = st.columns([1, 3])
+            # col1.write('Total Number of Test Samples: ' +
+            #            str(len(ts_test)))
+            # col1.dataframe(ts_test)
+
+            # col1.write('Total Number of Test Samples: ' +
+            #            str(len(ts_test_pred)))
+            # col1.dataframe(ts_test_pred)
+            #ts_test_pred, ts_test_norm_pred, ts_test_norm_pred_raw, target_test, target_test_norm, target_test_norm_raw, pred_test_range
+
 ######################################
 with st.sidebar.container():
     st.sidebar.subheader("University of Vienna | Research Project")

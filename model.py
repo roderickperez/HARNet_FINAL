@@ -176,6 +176,10 @@ class HAR(object):
             weights = 1 / self.lm.predict(X)
         elif self.fit_method == 'OLS':
             weights = 1.0
+        elif self.fit_method == 'Zeros':
+            weights = 0.0
+        elif self.fit_method == 'Random':
+            pass
         else:
             logging.warning(
                 f"Baseline fit {self.baseline_fit} unknown. Using weights = 1.0.")
