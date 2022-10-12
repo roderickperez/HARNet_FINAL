@@ -83,6 +83,9 @@ df_symbol = df.groupby(['Symbol'])
 df = df_symbol.get_group(stockOptions)
 df = df.drop('Symbol', axis=1)
 
+minYear = pd.to_datetime(df.index[0]).date()
+maxYear = pd.to_datetime(df.index[-1]).date()
+
 with tab1:
     st.subheader(f'Dataset: {dataSetOptions} | {stockOptions}')
     tab11, tab12 = st.tabs(['Data', 'Plot'])
@@ -92,6 +95,13 @@ with tab1:
     with tab12:
         #######################
         fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(x=[minYear, minYear, maxYear, maxYear, minYear],
+                       y=[df[variableSelection].min(), df[variableSelection].max(),
+                          df[variableSelection].max(
+                       ), df[variableSelection].min(),
+                df[variableSelection].min()], fill="toself", opacity=0.5,
+                mode="none", name=f"Train", fillcolor='green'))
         fig.add_trace(
             go.Scatter(x=df.index, y=df[variableSelection], name='Data'))
         fig.layout.update(
@@ -110,8 +120,6 @@ with tab1:
             ))
         st.plotly_chart(fig)
 
-minYear = pd.to_datetime(df.index[0]).date()
-maxYear = pd.to_datetime(df.index[-1]).date()
 
 timeExpander = st.sidebar.expander("Date Selection")
 
