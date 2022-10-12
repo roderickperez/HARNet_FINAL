@@ -14,9 +14,9 @@
     "label_length": 5,
     "batch_size": 4,
     "optimizer": "Adam",
-    "loss": "MSE",
+    "loss": "QLIKE",
     "verbose": 0,
-    "baseline_fit": "Zeros",
+    "baseline_fit": "Random",
     "path": "./data/MAN_data.csv",
     "asset": ".DJI",
     "include_sv": false,
@@ -29,6 +29,6 @@
     "scaler_max": 0.001,
     "tb_path": "./tb/",
     "save_path": "./results/",
-    "save_best_weights": false,
+    "save_best_weights": true,
     "run_eagerly": false
 }

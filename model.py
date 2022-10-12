@@ -121,7 +121,7 @@ class RVPredModel(Model):
                         ts[:, idx - self.max_lag:idx + label_length - 1, :])
                     y.append(self.labels_from_inp_ts(
                         ts, [idx, idx + label_length]))
-                    w.append(weights[:, idx - idx_range_train[0]                             :idx + label_length - idx_range_train[0], 0:1])
+                    w.append(weights[:, idx - idx_range_train[0]:idx + label_length - idx_range_train[0], 0:1])
                 x = tf.concat(x, axis=0)
                 y = tf.concat(y, axis=0)
                 w = tf.concat(w, axis=0)
@@ -179,7 +179,7 @@ class HAR(object):
         elif self.fit_method == 'Zeros':
             weights = 0.0
         elif self.fit_method == 'Random':
-            pass
+            weights = 1.0
         else:
             logging.warning(
                 f"Baseline fit {self.baseline_fit} unknown. Using weights = 1.0.")

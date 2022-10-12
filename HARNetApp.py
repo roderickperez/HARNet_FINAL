@@ -197,7 +197,7 @@ useBiasDeConv = modelParametersExpander.radio(
 activationFunction = modelParametersExpander.selectbox(
     'Activation Function', ['relu', 'tanh', 'sigmoid'], 0)
 learningRate = modelParametersExpander.slider('Learning Rate',
-                                              min_value=0.0001, max_value=1.0, value=0.0001, step=0.1, format='%.4f')
+                                              min_value=0.001, max_value=1.0, value=0.1, step=0.001, format='%.4f')
 epochs = modelParametersExpander.slider(
     'Epochs', min_value=1, max_value=1000, value=100, step=1)
 stepsPerEpoch = modelParametersExpander.slider(
@@ -213,6 +213,9 @@ verbose = modelParametersExpander.selectbox('Verbose', [0, 1], 0)
 baselineFit = modelParametersExpander.selectbox(
     'Baseline Fit', ['OLS', 'WLS', 'Zeros', 'Random'])
 
+if baselineFit == 'Random':
+    selectedRandomSeed = modelParametersExpander.text_input(
+        'Add Random Seed', value='123')
 scalerParametersExpander = st.sidebar.expander("Scaler Parameters")
 
 scalerSelection = scalerParametersExpander.selectbox(
@@ -528,13 +531,15 @@ if st.sidebar.button('Execute Model'):
             weights = 1 / \
                 model(df_norm_in[:, idx_range_train[0] -
                                  model.max_lag:idx_range_train[1] - 1, :])
-        else:  # OLS case (Ordinary Least Squared)
+        elif cfg.baseline_fit == 'Zeros':
+            weights = tf.zeros_like(
+                df_norm_in[:, idx_range_train[0]:idx_range_train[1], :])
+        elif cfg.baseline_fit == 'OLS':
             weights = tf.ones_like(
                 df_norm_in[:, idx_range_train[0]:idx_range_train[1], :])
-
-        # st.write(weights)
-        # st.write('Shape of Weight Tensor: ', tf.size(weights))
-        # st.write(type(weights))
+        else:
+            randomSeed = tf.random.Generator.from_seed(int(selectedRandomSeed))
+            weights = randomSeed.normal(shape=(1, len(df_train)-1, 1))
 
         valid_batch_gen_idxs = list(
             range(idx_range_train[0] + model.max_lag, idx_range_train[1] - cfg.label_length + 1))
@@ -859,8 +864,10 @@ if st.sidebar.button('Execute Model'):
             st.plotly_chart(fig)
     with tab9:
         st.subheader('Weigh Selection: ' + str(baselineFit))
-        # st.write('Weights Matrix Size: ' + str(weightMatrixSize))
-######################################
+        st.write(weights)
+        st.write('Shape of Weight Tensor: ', tf.size(weights))
+        st.write(type(weights))
+        # ######################################
 with st.sidebar.container():
     st.sidebar.subheader("University of Vienna | Research Project")
     st.sidebar.write(
