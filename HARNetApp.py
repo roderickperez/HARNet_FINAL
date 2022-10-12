@@ -45,7 +45,7 @@ st.sidebar.image("images/uniWienLogo.png", use_column_width=True)
 
 # Create Config File
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
-    ['Preloaded Dataset', 'Data to Model', 'Model Parameters Summary', 'Metrics per Epoch', 'Metrics Plot', 'Metrics History', 'Forecast Plot', 'Forecast Data'])
+    ['Preloaded Dataset', 'Data to Model', 'Model Parameters Summary', 'Metrics per Epoch', 'Metrics Plot', 'Metrics History', 'Forecast Results', 'Forecast Data'])
 
 #################################
 dataSetExpander = st.sidebar.expander("Dataset", expanded=True)
@@ -490,23 +490,29 @@ if st.sidebar.button('Execute Model'):
         # Closing file
         f.close()
 
+    # st.write('ts norm')
+    # st.dataframe(ts_norm)
+
+    # st.write('df norm')
+    # st.dataframe(df_norm)
     # init model
-    model = model_from_cfg(cfg, ts_norm, scaler, idx_range_train)
+    # Here I replace ts_norm by df_norm
+    model = model_from_cfg(cfg, df_norm, scaler, idx_range_train)
 
     # fit model
     if not model.is_tf_model:
-        print(f"\n-- Fitting {exp_name}... --")
-        model.fit(ts_norm.values[idx_range_train[0] -
+        #print(f"\n-- Fitting {exp_name}... --")
+        model.fit(df_norm.values[idx_range_train[0] -
                                  model.max_lag:idx_range_train[1], :])
         model.save(save_path_curr)
     else:
-        print(f"\n-- Fitting {exp_name} with {cfg.epochs} epochs... --")
+        #print(f"\n-- Fitting {exp_name} with {cfg.epochs} epochs... --")
         optimizer = tf.keras.optimizers.get(cfg.optimizer)
         K.set_value(optimizer.lr, cfg.learning_rate)
 
         # pass correct inp ts and prediction here
-        ts_norm_in = model.get_inp_ts(
-            ts_norm.values)  # Reshape to tensor format
+        df_norm_in = model.get_inp_ts(
+            df_norm.values)  # Reshape to tensor format
 
         model.compile(optimizer=optimizer, loss=get_loss(
             cfg.loss), sample_weight_mode="temporal")
@@ -520,11 +526,11 @@ if st.sidebar.button('Execute Model'):
 
         if cfg.baseline_fit == 'WLS':  # Weighted Least Squared
             weights = 1 / \
-                model(ts_norm_in[:, idx_range_train[0] -
+                model(df_norm_in[:, idx_range_train[0] -
                                  model.max_lag:idx_range_train[1] - 1, :])
         else:  # OLS case (Ordinary Least Squared)
             weights = tf.ones_like(
-                ts_norm_in[:, idx_range_train[0]:idx_range_train[1], :])
+                df_norm_in[:, idx_range_train[0]:idx_range_train[1], :])
 
         # st.write(weights)
         # st.write('Shape of Weight Tensor: ', tf.size(weights))
@@ -533,7 +539,7 @@ if st.sidebar.button('Execute Model'):
         valid_batch_gen_idxs = list(
             range(idx_range_train[0] + model.max_lag, idx_range_train[1] - cfg.label_length + 1))
         ds_fit = tf.data.Dataset.from_generator(
-            model.random_batch_generator(ts_norm_in[:, :idx_range_train[1], :], idx_range_train,
+            model.random_batch_generator(df_norm_in[:, :idx_range_train[1], :], idx_range_train,
                                          cfg.label_length,
                                          cfg.batch_size, cfg.steps_per_epoch,
                                          valid_batch_gen_idxs, weights),
@@ -561,18 +567,34 @@ if st.sidebar.button('Execute Model'):
         pd.DataFrame.from_dict(history.history).to_csv(
             save_path_curr + '/metrics_history.csv', index=False)
 
-    ts_train = ts.to_numpy()
-    ts_train = ts_train[idx_range_train[0] -
-                        model.max_lag:idx_range_train[1], :]
-    ts_train_pred, ts_train_norm_pred, ts_train_norm_pred_raw, target_train, target_train_norm, target_train_norm_raw, pred_train_range = get_pred(model, scaler,
-                                                                                                                                                   ts_train)
+    df = df.drop(columns=['norm'])
+    df = df.set_index('Date')
 
-    ts_test = ts.to_numpy()
-    ts_test = ts_test[idx_range_test[0] -
-                      model.max_lag:idx_range_test[1], :]
-    ts_test_pred, ts_test_norm_pred, ts_test_norm_pred_raw, target_test, target_test_norm, target_test_norm_raw, pred_test_range = get_pred(model, scaler,
-                                                                                                                                            ts_test)
+    df_train_ = df.to_numpy()
+    df_train_ = df_train_[idx_range_train[0] -
+                          model.max_lag:idx_range_train[1]+1, :]  # I added 1 extra value to match with the data selection
+    df_train_pred, df_train_norm_pred, df_train_norm_pred_raw, df_target_train, df_target_train_norm, df_target_train_norm_raw, df_pred_train_range = get_pred(model, scaler,
+                                                                                                                                                               df_train_)
 
+    df_train['df_train_pred'] = df_train_pred
+    df_train['df_train_norm_pred'] = df_train_norm_pred
+    df_train['df_target_train'] = df_target_train
+    df_train['df_target_train_norm'] = df_target_train_norm
+
+    #########################################################
+
+    df_test_ = df.to_numpy()
+    df_test_ = df_test_[idx_range_test[0] -
+                        model.max_lag:idx_range_test[1]+1, :]
+    df_test_pred, df_test_norm_pred, df_test_norm_pred_raw, df_target_test, df_target_test_norm, df_target_test_norm_raw, df_pred_test_range = get_pred(model, scaler,
+                                                                                                                                                        df_test_)
+
+    df_test['df_test_pred'] = df_test_pred
+    df_test['df_target_test_norm'] = df_target_test_norm
+    df_test['df_target_test'] = df_target_test
+    df_test['df_target_test_norm'] = df_target_test_norm
+
+    #########################################################
     metrics_train = get_model_metrics(
         model, scaler, ts.to_numpy(), idx_range_train, prefix='train')  #
     df_metrics_train = pd.DataFrame(metrics_train, index=[cfg.model])
@@ -695,38 +717,97 @@ if st.sidebar.button('Execute Model'):
         st.dataframe(metrics)
 
     with tab7:
-        col1, col2 = st.columns([1, 5])
-        ts_norm.index = pd.to_datetime(ts_norm.index).date
-        col1.write(ts_norm)
+        st.subheader(f'Stock {stockOptions}')
+        with st.container():
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                tab71, tab72 = st.tabs(['Train', 'Test'])
+                with tab71:
+                    # st.write(
+                    #     'Total Number of Train Samples: ' + str(len(df_train)))
+                    # st.write('Start Train Date Index: ' +
+                    #          str(int(trainStartIndex)))
+                    # st.write('End Train Date Index: ' +
+                    #          str(int(trainEndIndex)))
+                    st.dataframe(df_train)
 
-        ########################
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(x=ts_norm.index, y=ts_norm[0], name='Data'))
-        fig.layout.update(
-            xaxis_rangeslider_visible=True)
-        fig.update_layout(
-            autosize=False,
-            width=1100,
-            height=400,
-            plot_bgcolor="black",
-            margin=dict(
-                l=50,
-                r=50,
-                b=0,
-                t=0,
-                pad=2
-            ))
-        col2.plotly_chart(fig)
+                with tab72:
+                    # st.write(
+                    #     'Total Number of Test Samples: ' + str(len(df_test)))
+                    # st.write('Start Test Date Index: ' +
+                    #          str(int(testStartIndex)))
+                    # st.write('End Test Date Index: ' + str(int(testEndIndex)))
+                    st.dataframe(df_test)
+
+            with col2:
+                #######################
+                fig = go.Figure()
+                fig = make_subplots(specs=[[{"secondary_y": True}]])
+                fig.add_trace(
+                    go.Scatter(x=[trainStartPeriod, trainStartPeriod, trainEndPeriod, trainEndPeriod, trainStartPeriod],
+                               y=[df[variableSelection].min(), df[variableSelection].max(),
+                                  df[variableSelection].max(
+                               ), df[variableSelection].min(),
+                        df[variableSelection].min()], fill="toself", opacity=0.3,
+                        mode="none", name=f"Train", fillcolor='green'))
+                fig.add_trace(
+                    go.Scatter(x=[testStartPeriod, testStartPeriod, testEndPeriod, testEndPeriod, testStartPeriod],
+                               y=[df[variableSelection].min(), df[variableSelection].max(),
+                                  df[variableSelection].max(
+                               ), df[variableSelection].min(),
+                        df[variableSelection].min()], fill="toself", opacity=0.3,
+                        mode="none", name=f"Test", fillcolor='red'))
+                fig.add_trace(
+                    go.Scatter(x=df.index, y=df[variableSelection], name='Data', mode='lines', line=dict(color='blue')), secondary_y=False)
+                fig.add_trace(
+                    go.Scatter(x=df_train['Date'], y=df_train['df_train_pred'], name='df_train_pred', mode='lines', line=dict(color='yellow')), secondary_y=False)
+                fig.add_trace(
+                    go.Scatter(x=df_train['Date'], y=df_train['df_train_norm_pred'], name='df_train_norm_pred', mode='lines', line=dict(color='lime')), secondary_y=True)
+                fig.add_trace(
+                    go.Scatter(x=df_train['Date'], y=df_train['df_target_train'], name='df_target_train', mode='lines', line=dict(color='pink')), secondary_y=False)
+                fig.add_trace(
+                    go.Scatter(x=df_train['Date'], y=df_train['df_target_train_norm'], name='df_target_train_norm', mode='lines', line=dict(color='orange')), secondary_y=True)
+                fig.add_trace(
+                    go.Scatter(x=df_test['Date'], y=df_test['df_test_pred'], name='df_test_pred', mode='lines', line=dict(color='aqua')), secondary_y=False)
+                fig.add_trace(
+                    go.Scatter(x=df_test['Date'], y=df_test['df_test_norm_pred'], name='df_test_norm_pred', mode='lines', line=dict(color='coral')), secondary_y=True)
+                fig.add_trace(
+                    go.Scatter(x=df_test['Date'], y=df_test['df_target_test'], name='df_target_test', mode='lines', line=dict(color='fuchsia')), secondary_y=False)
+                fig.add_trace(
+                    go.Scatter(x=df_test['Date'], y=df_test['df_target_test_norm'], name='df_target_test_norm', mode='lines', line=dict(color='violet')), secondary_y=True)
+
+                # fig.add_trace(
+                #     go.Scatter(x=df.index, y=df['norm'], name='Data (Norm)', mode='lines', line=dict(color='magenta')), secondary_y=True)
+                fig.layout.update(
+                    xaxis_rangeslider_visible=True)
+                fig.update_layout(
+                    autosize=False,
+                    width=1000,
+                    height=400,
+                    plot_bgcolor="black",
+                    margin=dict(
+                        l=50,
+                        r=50,
+                        b=0,
+                        t=0,
+                        pad=2
+                    ))
+                # Set y-axes titles
+                fig.update_yaxes(
+                    title_text="Original", secondary_y=False)
+                fig.update_yaxes(
+                    title_text="Normalized", secondary_y=True)
+                st.plotly_chart(fig)
 
     with tab8:
         tab81, tab82 = st.tabs(['Train', 'Test'])
 
         with tab81:
-            col1, col2 = st.columns([1, 3])
-            col1.write('Total Number of Train Samples: ' +
-                       str(len(ts_train_pred)))
-            col1.dataframe(ts_train_pred)
+            pass
+            # col1, col2 = st.columns([1, 3])
+            # col1.write('Total Number of Train Samples: ' +
+            #            str(len(ts_train_pred)))
+            # col1.dataframe(ts_train_pred)
             # ts_train_pred, ts_train_norm_pred, ts_train_norm_pred_raw, target_train, target_train_norm, target_train_norm_raw, pred_train_range
 
             ########################
@@ -750,14 +831,15 @@ if st.sidebar.button('Execute Model'):
             # col2.plotly_chart(fig)
 
         with tab82:
-            col1, col2 = st.columns([1, 3])
-            col1.write('Total Number of Test Samples: ' +
-                       str(len(ts_test)))
-            col1.dataframe(ts_test)
+            pass
+            # col1, col2 = st.columns([1, 3])
+            # col1.write('Total Number of Test Samples: ' +
+            #            str(len(ts_test)))
+            # col1.dataframe(ts_test)
 
-            col1.write('Total Number of Test Samples: ' +
-                       str(len(ts_test_pred)))
-            col1.dataframe(ts_test_pred)
+            # col1.write('Total Number of Test Samples: ' +
+            #            str(len(ts_test_pred)))
+            # col1.dataframe(ts_test_pred)
             #ts_test_pred, ts_test_norm_pred, ts_test_norm_pred_raw, target_test, target_test_norm, target_test_norm_raw, pred_test_range
 
 ######################################
