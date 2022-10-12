@@ -590,7 +590,7 @@ if st.sidebar.button('Execute Model'):
                                                                                                                                                         df_test_)
 
     df_test['df_test_pred'] = df_test_pred
-    df_test['df_target_test_norm'] = df_target_test_norm
+    df_test['df_test_norm_pred'] = df_test_norm_pred
     df_test['df_target_test'] = df_target_test
     df_test['df_target_test_norm'] = df_target_test_norm
 
