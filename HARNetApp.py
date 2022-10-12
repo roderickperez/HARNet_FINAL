@@ -16,7 +16,7 @@ from pathlib import Path
 from plotly import graph_objects as go
 from datetime import date, datetime
 import plotly.graph_objects as go
-
+from plotly.subplots import make_subplots
 import pandas as pd
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -399,15 +399,22 @@ if st.sidebar.button('Execute Model'):
     trainStartIndex = df.Date[df.Date ==
                               trainStartPeriod].index.values
     trainEndIndex = df.Date[df.Date ==
-                            trainEndPeriod].index
+                            trainEndPeriod].index.values
     testStartIndex = df.Date[df.Date ==
-                             testStartPeriod].index
-    testEndIndex = df.Date[df.Date == testEndPeriod].index
+                             testStartPeriod].index.values
+    testEndIndex = df.Date[df.Date == testEndPeriod].index.values
 
-    st.write('trainStartIndex: ' + str(trainStartIndex))
-    st.write('trainEndIndex: ' + str(trainEndIndex))
-    st.write('testStartIndex: ' + str(testStartIndex))
-    st.write('testEndIndex: ' + str(testEndIndex))
+    # st.write('trainStartIndex: ' + str(trainStartIndex))
+    # st.write('trainEndIndex: ' + str(trainEndIndex))
+    # st.write('testStartIndex: ' + str(testStartIndex))
+    # st.write('testEndIndex: ' + str(testEndIndex))
+
+    # st.write(type(trainStartIndex))
+
+    idx_range_train_RPA = [int(trainStartIndex), int(trainEndIndex)]
+    st.write(idx_range_train_RPA)
+    idx_range_test_RPA = [int(testStartIndex), int(testEndIndex)]
+    st.write(idx_range_test_RPA)
 
     with tab2:
         st.subheader(f'Stock {stockOptions}')
@@ -428,6 +435,7 @@ if st.sidebar.button('Execute Model'):
             with col2:
                 #######################
                 fig = go.Figure()
+                fig = make_subplots(specs=[[{"secondary_y": True}]])
                 fig.add_trace(
                     go.Scatter(x=[trainStartPeriod, trainStartPeriod, trainEndPeriod, trainEndPeriod, trainStartPeriod],
                                y=[df[variableSelection].min(), df[variableSelection].max(),
@@ -443,7 +451,9 @@ if st.sidebar.button('Execute Model'):
                         df[variableSelection].min()], fill="toself", opacity=0.3,
                         mode="none", name=f"Test", fillcolor='red'))
                 fig.add_trace(
-                    go.Scatter(x=df['Date'], y=df[variableSelection], name='Data', mode='lines', line=dict(color='blue')))
+                    go.Scatter(x=df['Date'], y=df[variableSelection], name='Data', mode='lines', line=dict(color='blue')), secondary_y=False)
+                fig.add_trace(
+                    go.Scatter(x=df['Date'], y=df['norm'], name='Data (Norm)', mode='lines', line=dict(color='magenta')), secondary_y=True)
                 fig.layout.update(
                     xaxis_rangeslider_visible=True)
                 fig.update_layout(
@@ -458,6 +468,11 @@ if st.sidebar.button('Execute Model'):
                         t=0,
                         pad=2
                     ))
+                # Set y-axes titles
+                fig.update_yaxes(
+                    title_text="Original", secondary_y=False)
+                fig.update_yaxes(
+                    title_text="Normalized", secondary_y=True)
                 st.plotly_chart(fig)
 
     with tab3:
