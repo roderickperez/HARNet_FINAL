@@ -76,15 +76,26 @@ variableSelection = dataSetExpander.selectbox("Select Variable", ['rsv', 'close_
 df = pd.read_csv(filePath, sep=',')
 df['Date'] = df['Date'].astype(str)
 df[['Date', 'Time']] = df['Date'].str.split(" ", 1, expand=True)
-df.index = df['Date']
-df = df.drop(['Date', 'Time'], axis=1)
+#df.index = df['Date']
+df = df.drop(['Time'], axis=1)
 
 df_symbol = df.groupby(['Symbol'])
 df = df_symbol.get_group(stockOptions)
 df = df.drop('Symbol', axis=1)
+df = df.reset_index(drop=True)
 
-minYear = pd.to_datetime(df.index[0]).date()
-maxYear = pd.to_datetime(df.index[-1]).date()
+minYear = pd.to_datetime(df['Date'].min()).date()
+maxYear = pd.to_datetime(df['Date'].max()).date()
+
+timeExpander = st.sidebar.expander("Date Selection")
+
+startPeriod = timeExpander.date_input("Start Date", minYear)
+endPeriod = timeExpander.date_input("End Date", maxYear)
+
+trainingPercentage = timeExpander.slider('Training Percentage',
+                                         min_value=0, max_value=100, value=80, step=5)
+testPercentage = timeExpander.slider('Test Percentage',
+                                     min_value=0, max_value=100, value=(100-trainingPercentage), step=5, disabled=True)
 
 with tab1:
     st.subheader(f'Dataset: {dataSetOptions} | {stockOptions}')
@@ -96,14 +107,14 @@ with tab1:
         #######################
         fig = go.Figure()
         fig.add_trace(
-            go.Scatter(x=[minYear, minYear, maxYear, maxYear, minYear],
+            go.Scatter(x=[startPeriod, startPeriod, endPeriod, endPeriod, startPeriod],
                        y=[df[variableSelection].min(), df[variableSelection].max(),
                           df[variableSelection].max(
                        ), df[variableSelection].min(),
                 df[variableSelection].min()], fill="toself", opacity=0.5,
                 mode="none", name=f"Train", fillcolor='green'))
         fig.add_trace(
-            go.Scatter(x=df.index, y=df[variableSelection], name='Data'))
+            go.Scatter(x=df['Date'], y=df[variableSelection], name='Data'))
         fig.layout.update(
             xaxis_rangeslider_visible=True)
         fig.update_layout(
@@ -119,18 +130,6 @@ with tab1:
                 pad=2
             ))
         st.plotly_chart(fig)
-
-
-timeExpander = st.sidebar.expander("Date Selection")
-
-startPeriod = timeExpander.date_input("Start Date", minYear)
-endPeriod = timeExpander.date_input("End Date", maxYear)
-
-trainingPercentage = timeExpander.slider('Training Percentage',
-                                         min_value=0, max_value=100, value=80, step=5)
-testPercentage = timeExpander.slider('Test Percentage',
-                                     min_value=0, max_value=100, value=(100-trainingPercentage), step=5, disabled=True)
-
 
 start_year_train = timeExpander.slider(
     'Select Start Year for Training:', min_value=2000, max_value=2022, value=2012, step=1)
@@ -303,9 +302,13 @@ if st.sidebar.button('Execute Model'):
     year_range_test = [cfg.start_year_train + cfg.n_years_train,
                        cfg.start_year_train + cfg.n_years_train + cfg.n_years_test]
 
+    st.write(year_range_train)
+    st.write(year_range_test)
     idx_range_train = year_range_to_idx_range(ts_norm, year_range_train)
     idx_range_test = year_range_to_idx_range(ts_norm, year_range_test)
 
+    st.write(idx_range_train)
+    st.write(idx_range_test)
     ###################################
 
     with tab2:
