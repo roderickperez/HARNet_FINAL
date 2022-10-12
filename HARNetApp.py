@@ -866,4 +866,4 @@ with st.sidebar.container():
     st.sidebar.write(
         "###### App Authors: Roderick Perez & Le Thi (Janie) Thuy Trang")
     st.sidebar.write("###### Faculty Advisor: Xandro Bayer")
-    st.sidebar.write("###### Updated: 12/10/2022")
+    st.sidebar.write("###### Updated: 13/10/2022")
