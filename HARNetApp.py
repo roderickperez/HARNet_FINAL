@@ -45,7 +45,7 @@ st.sidebar.image("images/uniWienLogo.png", use_column_width=True)
 
 # Create Config File
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
-    ['Preloaded Dataset', 'Data to Model', 'Model Parameters Summary', 'Metrics', 'Metrics Plot', 'Metrics History', 'Forecast Plot', 'Forecast Data'])
+    ['Preloaded Dataset', 'Data to Model', 'Model Parameters Summary', 'Metrics per Epoch', 'Metrics Plot', 'Metrics History', 'Forecast Plot', 'Forecast Data'])
 
 #################################
 dataSetExpander = st.sidebar.expander("Dataset", expanded=True)
@@ -370,8 +370,8 @@ if st.sidebar.button('Execute Model'):
     # st.write(year_range_train)
     # st.write(year_range_test)
 
-    idx_range_train = year_range_to_idx_range(ts_norm, year_range_train)
-    idx_range_test = year_range_to_idx_range(ts_norm, year_range_test)
+    # idx_range_train = year_range_to_idx_range(ts_norm, year_range_train)
+    # idx_range_test = year_range_to_idx_range(ts_norm, year_range_test)
 
     # col1, col2 = st.columns(2)
     # with col1:
@@ -393,7 +393,7 @@ if st.sidebar.button('Execute Model'):
     ###########################################
     # Till here df and ts (ts_) are equal
     # st.write(ts_)
-    st.write(idx_range_test)  # These are the ranges (index) for the Test data
+    # st.write(idx_range_test)  # These are the ranges (index) for the Test data
     ###################################
 
     trainStartIndex = df.Date[df.Date ==
@@ -411,10 +411,12 @@ if st.sidebar.button('Execute Model'):
 
     # st.write(type(trainStartIndex))
 
-    idx_range_train_RPA = [int(trainStartIndex), int(trainEndIndex)]
-    st.write(idx_range_train_RPA)
-    idx_range_test_RPA = [int(testStartIndex), int(testEndIndex)]
-    st.write(idx_range_test_RPA)
+    idx_range_train = [int(trainStartIndex), int(trainEndIndex)]
+
+    idx_range_test = [int(testStartIndex), int(testEndIndex)]
+
+    df_train = df.iloc[idx_range_train[0]:idx_range_train[1] + 1, ]
+    df_test = df.iloc[idx_range_test[0]:idx_range_test[1] + 1, ]
 
     with tab2:
         st.subheader(f'Stock {stockOptions}')
@@ -424,13 +426,20 @@ if st.sidebar.button('Execute Model'):
                 tab21, tab22 = st.tabs(['Train', 'Test'])
                 with tab21:
                     st.write(
-                        'Total Number of Train Samples: ' + str(len(ts_)))
-                    st.dataframe(ts_)
+                        'Total Number of Train Samples: ' + str(len(df_train)))
+                    st.write('Start Train Date Index: ' +
+                             str(int(trainStartIndex)))
+                    st.write('End Train Date Index: ' +
+                             str(int(trainEndIndex)))
+                    st.dataframe(df_train)
 
                 with tab22:
                     st.write(
-                        'Total Number of Test Samples: ' + str(len(ts_)))
-                    st.dataframe(ts_)
+                        'Total Number of Test Samples: ' + str(len(df_test)))
+                    st.write('Start Test Date Index: ' +
+                             str(int(testStartIndex)))
+                    st.write('End Test Date Index: ' + str(int(testEndIndex)))
+                    st.dataframe(df_test)
 
             with col2:
                 #######################
