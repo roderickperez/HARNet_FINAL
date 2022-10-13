@@ -18,6 +18,7 @@ from datetime import date, datetime
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
+import numpy as np
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -51,38 +52,60 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(
 dataSetExpander = st.sidebar.expander("Dataset", expanded=True)
 
 dataSetOptions = dataSetExpander.selectbox(
-    "Select Dataset", ['MAN', 'USEUINDXD', 'VIXCLS'])
+    "Select Dataset", ['MAN', 'USEPUINDXD', 'VIXCLS'])
 
-filePath = "./data/MAN_data.csv"
-# filePath = "./data/USEPUINDXD.csv"
-# filePath = "./data/VIXCLS.csv"
+if dataSetOptions == 'MAN':
+    filePath = "./data/MAN_data.csv"
 
-stockOptions = dataSetExpander.selectbox(
-    "Select Stock", ['.AEX', '.AORD', '.BFX', '.BSESN', '.BVSP', '.DJI', '.FCHI', '.FTSE',
-                     '.GDAXI', '.HSI', '.IBEX', '.IXIC', '.KS11', '.MXX', '.NSEI', '.RUT',
-                     '.SPX', '.SSEC', '.SSMI', '.STI', '.STOXX50E', '.KSE', '.N225', '.OSEAX',
-                     '.GSPTSE', '.SMSI', '.OMXC20', '.OMXHPI', '.OMXSPI', '.FTMIB', '.BVLG'], 5)
+    stockOptions = dataSetExpander.selectbox(
+        "Select Stock", ['.AEX', '.AORD', '.BFX', '.BSESN', '.BVSP', '.DJI', '.FCHI', '.FTSE',
+                         '.GDAXI', '.HSI', '.IBEX', '.IXIC', '.KS11', '.MXX', '.NSEI', '.RUT',
+                         '.SPX', '.SSEC', '.SSMI', '.STI', '.STOXX50E', '.KSE', '.N225', '.OSEAX',
+                         '.GSPTSE', '.SMSI', '.OMXC20', '.OMXHPI', '.OMXSPI', '.FTMIB', '.BVLG'], 5)
+    variableSelection = dataSetExpander.selectbox("Select Variable", ['rsv', 'close_price', 'close_time',
+                                                                      'rk_twoscale', 'bv_ss', 'medrv',
+                                                                      'rsv_ss', 'rv10_ss', 'rv5_ss',
+                                                                      'rk_th2', 'rk_parzen', 'bv',
+                                                                      'rv10', 'open_price', 'open_time',
+                                                                      'open_to_close', 'rv5', 'nobs'], 8)
+    df = pd.read_csv(filePath, sep=',')
+    df['Date'] = df['Date'].astype(str)
+    df[['Date', 'Time']] = df['Date'].str.split(" ", 1, expand=True)
+    # df.index = df['Date']
+    df = df.drop(['Time'], axis=1)
 
-variableSelection = dataSetExpander.selectbox("Select Variable", ['rsv', 'close_price', 'close_time',
-                                                                  'rk_twoscale', 'bv_ss', 'medrv',
-                                                                  'rsv_ss', 'rv10_ss', 'rv5_ss',
-                                                                  'rk_th2', 'rk_parzen', 'bv',
-                                                                  'rv10', 'open_price', 'open_time',
-                                                                  'open_to_close', 'rv5', 'nobs'], 8)
+    df_symbol = df.groupby(['Symbol'])
+    df = df_symbol.get_group(stockOptions)
+    df = df.drop('Symbol', axis=1)
+    df = df.reset_index(drop=True)
+
+elif dataSetOptions == 'USEPUINDXD':
+    filePath = "./data/USEPUINDXD.csv"
+    df = pd.read_csv(filePath, sep=',')
+    # Catch if any value is equal to .
+    df = df.replace('.', np.NaN)
+    # Delete NA in dataframe
+    df = df.dropna()
+
+    st.write(type(df.USEPUINDXD[0]))
+
+    stockOptions = 'USEPUINDXD'
+    variableSelection = 'USEPUINDXD'
+elif dataSetOptions == 'VIXCLS':
+    filePath = "./data/VIXCLS.csv"
+    df = pd.read_csv(filePath, sep=',')
+    # Catch if any value is equal to .
+    df = df.replace('.', np.NaN)
+    # Delete NA in dataframe
+    df = df.dropna()
+    df['VIXCLS'] = df['VIXCLS'].astype(float)
+    stockOptions = 'VIXCLS'
+    variableSelection = 'VIXCLS'
+
+
 # if st.sidebar.button("Preload Dataset"):
 # def custom_date_parser(x): return datetime.strptime(x, "%Y-%m-%d %H:%M:%S%z%z")
 
-
-df = pd.read_csv(filePath, sep=',')
-df['Date'] = df['Date'].astype(str)
-df[['Date', 'Time']] = df['Date'].str.split(" ", 1, expand=True)
-#df.index = df['Date']
-df = df.drop(['Time'], axis=1)
-
-df_symbol = df.groupby(['Symbol'])
-df = df_symbol.get_group(stockOptions)
-df = df.drop('Symbol', axis=1)
-df = df.reset_index(drop=True)
 
 minYear = pd.to_datetime(df['Date'].min()).date()
 maxYear = pd.to_datetime(df['Date'].max()).date()
@@ -124,6 +147,7 @@ testStartPeriod = df_test['Date'].values[0]
 testEndPeriod = df_test['Date'].values[-1]
 
 with tab1:
+
     st.subheader(f'Dataset: {dataSetOptions} | {stockOptions}')
     tab11, tab12, tab13 = st.tabs(['Data', 'Statistics', 'Plot'])
 
@@ -360,7 +384,7 @@ if st.sidebar.button('Execute Model'):
     ts_.index = pd.to_datetime(ts_.index).date
 
     # df['norm'] = df_norm
-    #df.index = pd.to_datetime(df.index).date
+    # df.index = pd.to_datetime(df.index).date
     df = pd.concat([df, df_norm], axis=1, ignore_index=True)
     df = df.rename(columns={0: variableSelection, 1: 'norm'})
 
@@ -389,7 +413,7 @@ if st.sidebar.button('Execute Model'):
 
     ##########################################
     # Convert Date Index to Column (again)
-    #df['Date'] = df.index
+    # df['Date'] = df.index
     df.reset_index(inplace=True)  # , drop=True
     # st.write('Full Original Dataset')
     # st.write(df)
@@ -504,12 +528,12 @@ if st.sidebar.button('Execute Model'):
 
     # fit model
     if not model.is_tf_model:
-        #print(f"\n-- Fitting {exp_name}... --")
+        # print(f"\n-- Fitting {exp_name}... --")
         model.fit(df_norm.values[idx_range_train[0] -
                                  model.max_lag:idx_range_train[1], :])
         model.save(save_path_curr)
     else:
-        #print(f"\n-- Fitting {exp_name} with {cfg.epochs} epochs... --")
+        # print(f"\n-- Fitting {exp_name} with {cfg.epochs} epochs... --")
         optimizer = tf.keras.optimizers.get(cfg.optimizer)
         K.set_value(optimizer.lr, cfg.learning_rate)
 
