@@ -6,6 +6,7 @@ from dataclasses import field
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 from pydantic.dataclasses import dataclass
@@ -68,22 +69,43 @@ def year_range_to_idx_range(ts, year_range):
 
     return [idx_start, k]
 
+# This function was modief to accept the desired stock (assest) by user
 
-def get_MAN_data(path, asset=".SPX", include_sv=False):  # , estimator="rv5_ss"
+
+def get_data(path, stockOptions, include_sv=False):  # , estimator="rv5_ss"
     # load the data
     # e.g. asset = .SPX, estimator = rv5_ss (see https://realized.oxford-man.ox.ac.uk/documentation/estimators)
     # returns the specified time series (e.g. realized volatility for the SP500)
-    data = pd.read_csv(Path(path))
-    data_asset = data[data.Symbol == asset]
-    if include_sv:
-        ts = data_asset.set_index(data_asset.columns[0])[['rv5_ss', 'rsv_ss']]
-        ts = ts.assign(rsv_pos=(ts['rv5_ss'] - ts['rsv_ss']).values)
-        signed_jumps = (ts['rsv_pos'] - ts['rsv_ss']).values
-        ts = ts.assign(signed_jumps=signed_jumps)
-        del ts['rsv_pos']
+    if stockOptions == 'VIXCLS':
+        data = pd.read_csv(Path(path))
+        data = data.replace('.', np.NaN)
+        # Delete NA in dataframe
+        data = data.dropna()
+        # Convert values from string to numpy
+        data['VIXCLS'] = data['VIXCLS'].values.astype(float)
+        ts = data.set_index(data.columns[0])[['VIXCLS']]
         ts.index = pd.DatetimeIndex(pd.to_datetime(ts.index, utc=True))
+
+    elif stockOptions == 'USEPUINDXD':
+        data = pd.read_csv(Path(path))
+        data = data.replace('.', np.NaN)
+        data = data.dropna()
+        ts = data.set_index(data.columns[0])[['USEPUINDXD']]
+        ts.index = pd.DatetimeIndex(pd.to_datetime(ts.index, utc=True))
+
     else:
-        ts = data_asset.set_index(data_asset.columns[0])[['rv5_ss']]
-        ts.index = pd.DatetimeIndex(pd.to_datetime(ts.index, utc=True))
+        data = pd.read_csv(Path(path))
+        data_asset = data[data.Symbol == stockOptions]
+        if include_sv:
+            ts = data_asset.set_index(data_asset.columns[0])[
+                ['rv5_ss', 'rsv_ss']]
+            ts = ts.assign(rsv_pos=(ts['rv5_ss'] - ts['rsv_ss']).values)
+            signed_jumps = (ts['rsv_pos'] - ts['rsv_ss']).values
+            ts = ts.assign(signed_jumps=signed_jumps)
+            del ts['rsv_pos']
+            ts.index = pd.DatetimeIndex(pd.to_datetime(ts.index, utc=True))
+        else:
+            ts = data_asset.set_index(data_asset.columns[0])[['rv5_ss']]
+            ts.index = pd.DatetimeIndex(pd.to_datetime(ts.index, utc=True))
 
     return ts

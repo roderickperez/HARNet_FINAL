@@ -1,5 +1,5 @@
 from copy import copy
-from util import HARNetCfg, get_MAN_data, year_range_to_idx_range
+from util import HARNetCfg, get_data, year_range_to_idx_range
 from model import scaler_from_cfg, model_from_cfg, get_loss, LRTensorBoard, MetricCallback, get_model_metrics, get_pred
 from tensorflow.python.keras import backend as K
 from pydantic.json import pydantic_encoder
@@ -86,8 +86,6 @@ elif dataSetOptions == 'USEPUINDXD':
     df = df.replace('.', np.NaN)
     # Delete NA in dataframe
     df = df.dropna()
-
-    st.write(type(df.USEPUINDXD[0]))
 
     stockOptions = 'USEPUINDXD'
     variableSelection = 'USEPUINDXD'
@@ -350,9 +348,10 @@ if st.sidebar.button('Execute Model'):
     shutil.copyfile(args.cfg, os.path.join(
         save_path_curr, os.path.basename(args.cfg)))
 
-    # load data
-    ts = get_MAN_data(cfg.path, cfg.asset, cfg.include_sv)
-
+    # load data (Change the function name from get_MAN_data to get_data)
+    ts = get_data(cfg.path, cfg.asset, cfg.include_sv)
+    # st.write(ts)
+    # st.dataframe(ts)
     # col1, col2 = st.columns(2)
     # with col1:
     #     st.write('Xandro')
@@ -366,6 +365,7 @@ if st.sidebar.button('Execute Model'):
     #     st.write(len(df))
     #     st.write(df)
 
+    # st.dataframe(df)
     ts_ = copy(ts)
     ###################################
     if cfg.include_sv and "log" in cfg.scaler.lower():
