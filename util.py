@@ -13,7 +13,7 @@ from pydantic.dataclasses import dataclass
 
 logger = logging.getLogger('harnet')
 
-
+# Added the user data
 @dataclass
 class HARNetCfg:
     # Model

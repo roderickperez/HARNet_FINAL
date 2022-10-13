@@ -105,7 +105,7 @@ elif dataSetOptions == 'VIXCLS':
 # def custom_date_parser(x): return datetime.strptime(x, "%Y-%m-%d %H:%M:%S%z%z")
 
 
-minYear = pd.to_datetime(df['Date'].min()).date()
+minYear = pd.to_datetime('2002-05-08').date()
 maxYear = pd.to_datetime(df['Date'].max()).date()
 
 timeExpander = st.sidebar.expander("Date Selection")
@@ -221,7 +221,7 @@ activationFunction = modelParametersExpander.selectbox(
 learningRate = modelParametersExpander.slider('Learning Rate',
                                               min_value=0.001, max_value=1.0, value=0.1, step=0.1, format='%.4f')
 epochs = modelParametersExpander.slider(
-    'Epochs', min_value=1, max_value=1000, value=100, step=1)
+    'Epochs', min_value=1, max_value=10000, value=100, step=1)
 stepsPerEpoch = modelParametersExpander.slider(
     'Steps per Epoch', min_value=1, max_value=100, value=1, step=1)
 labelLlength = modelParametersExpander.slider(

@@ -9,7 +9,7 @@
         20
     ],
     "learning_rate": 0.1,
-    "epochs": 100,
+    "epochs": 10000,
     "steps_per_epoch": 1,
     "label_length": 5,
     "batch_size": 4,
@@ -18,7 +18,7 @@
     "verbose": 0,
     "baseline_fit": "OLS",
     "path_MAN": "MAN_data.csv",
-    "asset": ".DJI",
+    "asset": "USEPUINDXD",
     "include_sv": false,
     "start_year_train": 2012,
     "n_years_train": 4,
