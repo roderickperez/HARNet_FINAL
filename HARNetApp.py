@@ -197,14 +197,14 @@ with tab1:
             ))
         st.plotly_chart(fig)
 
-start_year_train = timeExpander.slider(
-    'Select Start Year for Training:', min_value=2000, max_value=2022, value=2012, step=1)
-n_years_train = timeExpander.slider(
-    'Number of Year for Training:', min_value=1, max_value=21, value=4, step=1)
-start_year_test = timeExpander.slider(
-    'Select Start Year for Test:', min_value=2016, max_value=2022, value=2016, step=1, disabled=False)
-n_years_test = timeExpander.slider(
-    'Number of Years for Test:', min_value=1, max_value=6, value=1, step=1)
+# start_year_train = timeExpander.slider(
+#     'Select Start Year for Training:', min_value=2000, max_value=2022, value=2012, step=1)
+# n_years_train = timeExpander.slider(
+#     'Number of Year for Training:', min_value=1, max_value=21, value=4, step=1)
+# start_year_test = timeExpander.slider(
+#     'Select Start Year for Test:', min_value=2016, max_value=2022, value=2016, step=1, disabled=False)
+# n_years_test = timeExpander.slider(
+#     'Number of Years for Test:', min_value=1, max_value=6, value=1, step=1)
 
 
 # dataSetExpanderdataSetExpander
@@ -282,10 +282,10 @@ if st.sidebar.button('Execute Model'):
         "path": filePath,
         "asset": stockOptions,
         "include_sv": include_sv,
-        "start_year_train": start_year_train,
-        "n_years_train": n_years_train,
-        "start_year_test": start_year_test,
-        "n_years_test": n_years_test,
+        # "start_year_train": start_year_train,
+        # "n_years_train": n_years_train,
+        # "start_year_test": start_year_test,
+        # "n_years_test": n_years_test,
         "scaler": scalerSelection,
         "scaler_min": scalerMin,
         "scaler_max": scalerMax,
