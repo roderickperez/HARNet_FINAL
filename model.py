@@ -179,7 +179,7 @@ class HAR(object):
         elif self.fit_method == 'Zeros':
             weights = 0.0
         elif self.fit_method == 'Random':
-            weights = 1.0
+            weights = float(np.random.rand(1))
         else:
             logging.warning(
                 f"Baseline fit {self.baseline_fit} unknown. Using weights = 1.0.")

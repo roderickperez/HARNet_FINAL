@@ -385,7 +385,7 @@ if st.sidebar.button('Execute Model'):
 
     # df['norm'] = df_norm
     # df.index = pd.to_datetime(df.index).date
-    df = pd.concat([df, df_norm], axis=1, ignore_index=True)
+    df = pd.concat([df, ts_norm], axis=1, ignore_index=True)
     df = df.rename(columns={0: variableSelection, 1: 'norm'})
 
     # create train datasets
@@ -523,13 +523,13 @@ if st.sidebar.button('Execute Model'):
     # st.write('df norm')
     # st.dataframe(df_norm)
     # init model
-    # Here I replace ts_norm by df_norm
-    model = model_from_cfg(cfg, df_norm, scaler, idx_range_train)
+
+    model = model_from_cfg(cfg, ts_norm, scaler, idx_range_train)
 
     # fit model
     if not model.is_tf_model:
         # print(f"\n-- Fitting {exp_name}... --")
-        model.fit(df_norm.values[idx_range_train[0] -
+        model.fit(ts_norm.values[idx_range_train[0] -
                                  model.max_lag:idx_range_train[1], :])
         model.save(save_path_curr)
     else:
@@ -538,8 +538,8 @@ if st.sidebar.button('Execute Model'):
         K.set_value(optimizer.lr, cfg.learning_rate)
 
         # pass correct inp ts and prediction here
-        df_norm_in = model.get_inp_ts(
-            df_norm.values)  # Reshape to tensor format
+        ts_norm_in = model.get_inp_ts(
+            ts_norm.values)  # Reshape to tensor format
 
         model.compile(optimizer=optimizer, loss=get_loss(
             cfg.loss), sample_weight_mode="temporal")
@@ -553,22 +553,22 @@ if st.sidebar.button('Execute Model'):
 
         if cfg.baseline_fit == 'WLS':  # Weighted Least Squared
             weights = 1 / \
-                model(df_norm_in[:, idx_range_train[0] -
+                model(ts_norm_in[:, idx_range_train[0] -
                                  model.max_lag:idx_range_train[1] - 1, :])
         elif cfg.baseline_fit == 'Zeros':
             weights = tf.zeros_like(
-                df_norm_in[:, idx_range_train[0]:idx_range_train[1], :])
+                ts_norm_in[:, idx_range_train[0]:idx_range_train[1], :])
         elif cfg.baseline_fit == 'OLS':
             weights = tf.ones_like(
-                df_norm_in[:, idx_range_train[0]:idx_range_train[1], :])
+                ts_norm_in[:, idx_range_train[0]:idx_range_train[1], :])
         else:
             randomSeed = tf.random.Generator.from_seed(int(selectedRandomSeed))
             weights = randomSeed.normal(shape=(1, len(df_train)-1, 1))
 
         valid_batch_gen_idxs = list(
             range(idx_range_train[0] + model.max_lag, idx_range_train[1] - cfg.label_length + 1))
-        ds_fit = tf.data.Dataset.from_generator(
-            model.random_batch_generator(df_norm_in[:, :idx_range_train[1], :], idx_range_train,
+        ts_fit = tf.data.Dataset.from_generator(
+            model.random_batch_generator(ts_norm_in[:, :idx_range_train[1], :], idx_range_train,
                                          cfg.label_length,
                                          cfg.batch_size, cfg.steps_per_epoch,
                                          valid_batch_gen_idxs, weights),
@@ -582,7 +582,7 @@ if st.sidebar.button('Execute Model'):
                     [cfg.batch_size, cfg.label_length, model.channels_out])
             ))
 
-        history = model.fit(ds_fit, epochs=cfg.epochs, verbose=cfg.verbose,
+        history = model.fit(ts_fit, epochs=cfg.epochs, verbose=cfg.verbose,
                             callbacks=callbacks)  # [TqdmCallback(verbose=1)]
 
         # plot optimization

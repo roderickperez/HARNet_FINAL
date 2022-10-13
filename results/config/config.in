@@ -9,7 +9,7 @@
         20
     ],
     "learning_rate": 0.1,
-    "epochs": 10000,
+    "epochs": 100,
     "steps_per_epoch": 1,
     "label_length": 5,
     "batch_size": 4,
@@ -17,8 +17,8 @@
     "loss": "QLIKE",
     "verbose": 0,
     "baseline_fit": "OLS",
-    "path": "./data/USEPUINDXD.csv",
-    "asset": "USEPUINDXD",
+    "path": "./data/MAN_data.csv",
+    "asset": ".DJI",
     "include_sv": false,
     "scaler": "MinMax",
     "scaler_min": 0.0,
@@ -26,5 +26,5 @@
     "tb_path": "./tb/",
     "save_path": "./results/",
     "save_best_weights": false,
-    "run_eagerly": false
+    "run_eagerly": true
 }
